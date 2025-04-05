@@ -2,14 +2,13 @@
 
 ## Installation
 
-Follow these steps to install and set up AI Librarian:
+Follow these steps to install and set up:
 
 1.  **Clone the Repository:**
     ```bash
     git clone https://github.com/youkwan/ai-librarian.git
     cd ./ai-librarian/backend/
     ```
-    *Note: Windows users, please replace `/` with `\` in `./ai-librarian/backend/`.*
 
 2.  **Create Virtual Environment:**
     This project uses `uv` to manage the virtual environment and dependencies. In the `backend` directory, run:
@@ -28,7 +27,6 @@ Follow these steps to install and set up AI Librarian:
         ```powershell
         .\.venv\Scripts\Activate.ps1
         ```
-    *Tip: Once activated, your terminal prompt will usually be prefixed with `(.venv)`.*
 
 4.  **Install Dependencies:**
     With the virtual environment activated, run:
@@ -42,11 +40,11 @@ Follow these steps to install and set up AI Librarian:
     ```bash
     cp .env.example .env
     ```
-    Then, open the `.env` file in the `backend` directory with a text editor and fill in the required configuration values (e.g., API keys, database connection info) according to the comments within the file.
+    Then, open the `.env` file in the `backend` directory with a text editor and fill in the required configuration values (e.g., OPENAI API key, LangSmith API key, etc.).
 
 ## VSCode/Cursor Setup
 
-If you use VSCode or Cursor and want to use the Python extension, you can apply the following settings to help the extension correctly identify and use this project's virtual environment.
+This section is optional. You can use `uv` directly without configuring VSCode/Cursor. However, if you use VSCode or Cursor and want to use the Python extension, you can apply the following settings to help the extension correctly identify and use this project's virtual environment.
 
 1.  **Create Configuration Directory and File:**
     Ensure you are in the root directory of the `ai-librarian` project (the parent directory of `backend`). If the `.vscode` directory and `settings.json` file do not exist, use the appropriate command for your operating system to create them:
