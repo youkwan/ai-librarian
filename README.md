@@ -10,8 +10,11 @@ Follow these steps to install and set up:
     cd ./ai-librarian/backend/
     ```
 
-2.  **Create Virtual Environment:**
-    This project uses `uv` to manage the virtual environment and dependencies. In the `backend` directory, run:
+2.  **Install uv(if not already installed):**
+    This project uses [uv](https://github.com/astral-sh/uv) to manage the virtual environment and dependencies. If you don't have uv installed, follow the [official installation guide](https://docs.astral.sh/uv/getting-started/installation/).
+
+3.  **Create Virtual Environment:**
+    In the `backend` directory, run:
     ```bash
     uv venv
     ```
@@ -44,7 +47,7 @@ Follow these steps to install and set up:
 
 ## VSCode/Cursor Setup
 
-This section is optional. You can use `uv` directly without configuring VSCode/Cursor. However, if you use VSCode or Cursor and want to use the Python extension, you can apply the following settings to help the extension correctly identify and use this project's virtual environment.
+This section is optional. You can use `uv` directly without configuring VSCode/Cursor. However, if you use VSCode or Cursor and want to use the [Python extension](https://marketplace.visualstudio.com/items?itemName=ms-python.python), you can apply the following settings to help the extension correctly identify and use this project's virtual environment.
 
 1.  **Create Configuration Directory and File:**
     Ensure you are in the root directory of the `ai-librarian` project (the parent directory of `backend`). If the `.vscode` directory and `settings.json` file do not exist, use the appropriate command for your operating system to create them:
