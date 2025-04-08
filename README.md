@@ -45,6 +45,17 @@ Follow these steps to install and set up:
     ```
     Then, open the `.env` file in the `backend` directory with a text editor and fill in the required configuration values (e.g., OPENAI API key, LangSmith API key, etc.).
 
+6.  **Start the Application:**
+    In the `backend` directory, run:
+    ```bash
+    uv run .\app\main.py
+    ```
+    The backend will start and run at http://127.0.0.1:8000
+
+    API documentation can be viewed at:
+    - Swagger UI: http://127.0.0.1:8000/docs
+    - ReDoc: http://127.0.0.1:8000/redoc
+
 ## VSCode/Cursor Setup
 
 This section is optional. You can use `uv` directly without configuring VSCode/Cursor. However, if you use VSCode or Cursor and want to use the [Python extension](https://marketplace.visualstudio.com/items?itemName=ms-python.python), you can apply the following settings to help the extension correctly identify and use this project's virtual environment.

@@ -2,7 +2,9 @@ import uvicorn
 from fastapi import FastAPI
 from dotenv import load_dotenv
 
-from core.config import setup_cors
+from app.core.cors import setup_cors
+from app.apis.sys import router as sys_router
+from app.apis.agent import router as agent_router
 
 
 def create_app() -> FastAPI:
@@ -12,11 +14,13 @@ def create_app() -> FastAPI:
         version="0.1.0",
     )
     setup_cors(app)
-    # app.include_router(routers, prefix="/v1")
+    app.include_router(sys_router, prefix="/v1")
+    app.include_router(agent_router, prefix="/v1")
     return app
 
 
 app = create_app()
 
+
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="127.0.0.1", reload=True)
+    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
