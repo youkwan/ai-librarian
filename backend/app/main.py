@@ -1,3 +1,4 @@
+from fastapi.responses import RedirectResponse
 import uvicorn
 from fastapi import FastAPI
 from dotenv import load_dotenv
@@ -16,6 +17,11 @@ def create_app() -> FastAPI:
     setup_cors(app)
     app.include_router(sys_router, prefix="/v1")
     app.include_router(agent_router, prefix="/v1")
+
+    @app.get("/", include_in_schema=False)
+    async def root_redirect():  # noqa
+        return RedirectResponse(url="/docs")
+
     return app
 
 
