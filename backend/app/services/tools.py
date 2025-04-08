@@ -7,7 +7,7 @@ from langchain_core.tools.base import InjectedToolCallId
 from langgraph.types import Command
 from langgraph.config import get_stream_writer
 
-from app.models.schema import ToolCall
+from app.models.schemas import ToolCall
 
 
 @tool

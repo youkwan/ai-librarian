@@ -8,7 +8,7 @@ from langchain.chat_models import init_chat_model
 from dotenv import load_dotenv
 
 from app.services.tools import TOOLS
-from app.models.state import MessagesState, MessagesStateInput
+from app.models.states import MessagesState, MessagesStateInput
 from app.services.prompts import DEFAULT_SYSTEM_PROMPT
 
 

@@ -1,7 +1,8 @@
-from fastapi.responses import RedirectResponse
 import uvicorn
 from fastapi import FastAPI
 from dotenv import load_dotenv
+from importlib import metadata
+from fastapi.responses import RedirectResponse
 
 from app.core.cors import setup_cors
 from app.apis.sys import router as sys_router
@@ -10,16 +11,17 @@ from app.apis.agent import router as agent_router
 
 def create_app() -> FastAPI:
     load_dotenv()
+    __version__ = metadata.version("ai-librarian-backend")
     app = FastAPI(
         title="AI Librarian Backend",
-        version="0.1.0",
+        version=__version__,
     )
     setup_cors(app)
     app.include_router(sys_router, prefix="/v1")
     app.include_router(agent_router, prefix="/v1")
 
     @app.get("/", include_in_schema=False)
-    async def root_redirect():  # noqa
+    async def root_redirect():
         return RedirectResponse(url="/docs")
 
     return app
