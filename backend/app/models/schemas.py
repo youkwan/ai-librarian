@@ -99,16 +99,11 @@ class AegntRequest(BaseModel):
         langchain_messages = []
         for openai_message in self.messages:
             if openai_message.role == "system":
-                langchain_messages.append(
-                    SystemMessage(
-                        content=openai_message.content,
-                        additional_kwargs={"__openai_role__": "developer"},
-                    )
-                )
+                langchain_messages.append(SystemMessage(openai_message.content))
             elif openai_message.role == "assistant":
-                langchain_messages.append(AIMessage(content=openai_message.content))
+                langchain_messages.append(AIMessage(openai_message.content))
             else:
-                langchain_messages.append(HumanMessage(content=openai_message.content))
+                langchain_messages.append(HumanMessage(openai_message.content))
         return langchain_messages
 
     def get_runnable_config(self) -> dict:
