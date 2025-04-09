@@ -9,7 +9,6 @@ from dotenv import load_dotenv
 
 from app.services.tools import TOOLS
 from app.models.states import MessagesState, MessagesStateInput
-from app.services.prompts import DEFAULT_SYSTEM_PROMPT
 
 
 async def call_llm(state: MessagesState) -> Dict[str, List[AnyMessage]]:
@@ -26,8 +25,6 @@ async def call_llm(state: MessagesState) -> Dict[str, List[AnyMessage]]:
     llm_with_tools = llm.bind_tools(TOOLS)
 
     messages = state.messages
-    if not any(isinstance(message, SystemMessage) for message in messages):
-        messages = [SystemMessage(DEFAULT_SYSTEM_PROMPT)] + messages
 
     try:
         response = await llm_with_tools.ainvoke(messages)
