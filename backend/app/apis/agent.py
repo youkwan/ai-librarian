@@ -1,15 +1,23 @@
 import json
-
 from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import StreamingResponse
 from pydantic import ValidationError
 from typing import AsyncGenerator
 
 from app.services.graph import create_react_agent
-from app.models.schema import AegntRequest, AgentResponse
+from app.models.schemas import AegntRequest, AgentResponse, ModelResponse
+from app.models.llmconfig import Model
 
 router = APIRouter(prefix="/agents", tags=["agents"])
 react_agent = create_react_agent("react_agent")
+
+
+@router.get("/models", summary="list all models", response_model=ModelResponse)
+def get_models() -> ModelResponse:
+    """
+    Lists the currently available models
+    """
+    return ModelResponse(models=Model.list())
 
 
 @router.post("/invoke", response_model=AgentResponse)

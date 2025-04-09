@@ -1,20 +1,14 @@
 from __future__ import annotations
-import uuid
-from datetime import datetime, timezone
 from enum import Enum
 from pydantic import BaseModel, Field
 from typing import List
-from langchain_core.messages import (
-    AnyMessage,
-    SystemMessage,
-    AIMessage,
-    HumanMessage,
-)
+from langchain_core.messages import AnyMessage, SystemMessage, AIMessage, HumanMessage
 from langchain.chat_models import init_chat_model
 from langchain_core.language_models.chat_models import BaseChatModel
 
-from app.models.llmconfig import LLMConfig
+from app.models.llmconfig import LLMConfig, Model
 from app.models.toolcall import ToolCall
+from app.utils import generate_thread_id
 
 
 class HealthResponse(BaseModel):
@@ -29,33 +23,16 @@ class HealthResponse(BaseModel):
     )
 
 
-# class Model(str, Enum):
-#     """
-#     Enumeration of supported language models (LLMs).
-#     This enum can be extended with any model listed in the LangChain chat models documentation:
-#     https://python.langchain.com/docs/integrations/chat/
-#     """
+class ModelResponse(BaseModel):
+    """
+    Model response schema. Returns the list of available models.
+    """
 
-#     O3_MINI = "o3-mini"
-#     O1 = "o1"
-#     O1_MINI = "o1-mini"
-#     GPT_4O = "gpt-4o"
-#     GPT_4O_MINI = "gpt-4o-mini"
-#     CLAUDE_3_7_SONNET = "claude-3-7-sonnet-latest"
-#     CLAUDE_3_5_HAIKU = "claude-3-5-haiku-latest"
-#     CLAUDE_3_5_SONNET = "claude-3-5-sonnet-latest"
-#     GEMINI_2_0_FLASH = "google_genai:gemini-2.0-flash"
-#     GEMINI_2_0_FLASH_LITE = "google_genai:gemini-2.0-flash-lite"
-#     GEMINI_1_5_FLASH = "google_genai:gemini-1.5-flash"
-#     GEMINI_1_5_FLASH_8B = "google_genai:gemini-1.5-flash-8b"
-#     GEMINI_1_5_PRO = "google_genai:gemini-1.5-pro"
-#     LLAMA_3_3_70B_VERSATILE = "groq:llama-3.3-70b-versatile"
-#     LLAMA_3_2_1B_PREVIEW = "groq:llama-3.2-1b-preview"
-#     LLAMA_3_1_8B_INSTANT = "groq:llama-3.1-8b-instant"
-#     MIXTRAL_8X7B_32768 = "groq:mixtral-8x7b-32768"
-#     QWEN_QWQ_32B = "groq:qwen-qwq-32b"
-#     QWEN_2_5_32B = "groq:qwen-2.5-32b"
-#     DEEPSEEK_R1_DISTILL_QWEN_32B = "groq:deepseek-r1-distill-qwen-32b"
+    models: list[Model] = Field(
+        ...,
+        description="The list of available models.",
+        examples=[Model.list()],
+    )
 
 
 class Role(str, Enum):
@@ -94,8 +71,8 @@ class AegntRequest(BaseModel):
     """
 
     thread_id: str = Field(
-        default_factory=lambda: str(uuid.uuid4()),
-        examples=["ab586827-8c7c-4bf9-a6c9-fea58f43f5fc"],
+        default_factory=generate_thread_id,
+        examples=["thread-ab586827-8c7c-4bf9-a6c9-fea58f43f5fc"],
         description="Unique identifier to track and maintain conversation state. If provided, the existing conversation will be continued. If not provided, a new conversation thread will be created automatically.",
     )
     messages: List[OpenAIMessage] = Field(
@@ -122,16 +99,11 @@ class AegntRequest(BaseModel):
         langchain_messages = []
         for openai_message in self.messages:
             if openai_message.role == "system":
-                langchain_messages.append(
-                    SystemMessage(
-                        content=openai_message.content,
-                        additional_kwargs={"__openai_role__": "developer"},
-                    )
-                )
+                langchain_messages.append(SystemMessage(openai_message.content))
             elif openai_message.role == "assistant":
-                langchain_messages.append(AIMessage(content=openai_message.content))
+                langchain_messages.append(AIMessage(openai_message.content))
             else:
-                langchain_messages.append(HumanMessage(content=openai_message.content))
+                langchain_messages.append(HumanMessage(openai_message.content))
         return langchain_messages
 
     def get_runnable_config(self) -> dict:
@@ -150,7 +122,7 @@ class AgentResponse(BaseModel):
     thread_id: str = Field(
         ...,
         description="Unique identifier of the conversation thread. Can be supplied in subsequent requests to continue this conversation context.",
-        examples=[str(uuid.uuid4())],
+        examples=[generate_thread_id()],
     )
     llm_config: LLMConfig = Field(
         ...,
