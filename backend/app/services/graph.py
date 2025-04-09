@@ -14,11 +14,14 @@ from app.services.prompts import DEFAULT_SYSTEM_PROMPT
 
 async def call_llm(state: MessagesState) -> Dict[str, List[AnyMessage]]:
     llm_config = state.llm_config
-    llm = init_chat_model(
-        llm_config.model,
-        temperature=llm_config.temperature,
-        max_tokens=llm_config.max_tokens,
-    )
+    model_params = {
+        "model": llm_config.model,
+        "temperature": llm_config.temperature,
+    }
+    if llm_config.max_tokens is not None:
+        model_params["max_tokens"] = llm_config.max_tokens
+
+    llm = init_chat_model(**model_params)
 
     llm_with_tools = llm.bind_tools(TOOLS)
 
@@ -75,7 +78,7 @@ if __name__ == "__main__":
     print(
         asyncio.run(
             react_agent.ainvoke(
-                {"messages": [HumanMessage(content="請問1240+1240是多少")]},
+                {"messages": [HumanMessage("請問1240+1240是多少")]},
                 config,
             )
         )
