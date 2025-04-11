@@ -28,13 +28,13 @@ Follow these steps to install and set up:
         ```
     *   **Windows (PowerShell):**
         ```powershell
-        .\.venv\Scripts\Activate.ps1
+        .venv\Scripts\activate
         ```
 
 4.  **Install Dependencies:**
     With the virtual environment activated, run:
     ```bash
-    uv pip install .
+    uv pip install -e .
     ```
     This command reads the `pyproject.toml` file and installs all necessary Python packages.
 
