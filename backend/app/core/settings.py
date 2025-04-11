@@ -1,15 +1,23 @@
+from pathlib import Path
 from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+# Define the path to the .env file
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+DOTENV_PATH = BASE_DIR / ".env"
+
+if not DOTENV_PATH.is_file():
+    raise FileNotFoundError(f".env file not found at expected location: {DOTENV_PATH}")
+
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file="backend/.env", env_ignore_empty=True)
+    model_config = SettingsConfigDict(env_file=str(DOTENV_PATH), env_ignore_empty=True)
 
     # API settings
     debug: bool = False
     host: str = "0.0.0.0"
     port: int = 8000
-    allowed_origins: list[str] | None = Field(default_factory=lambda: ["*"])
+    allowed_origins: list[str] | None = Field(default_factory=list)
 
     # Default llm to use in agent
     default_llm: str = "gpt-4o-mini"
@@ -56,4 +64,6 @@ settings = Settings()
 
 
 if __name__ == "__main__":
-    print(settings)
+    from rich.pretty import pprint
+
+    pprint(settings)
