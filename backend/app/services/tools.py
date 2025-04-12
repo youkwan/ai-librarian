@@ -114,8 +114,8 @@ TOOLS = [
 
 
 # Dynamically mapping tool names to their descriptions (docstrings)
-TOOLS_INFO = {
-    obj.name: obj.description
+TOOLS_INFO = [
+    {"tool_name": obj.name, "tool_description": obj.description}
     for _, obj in inspect.getmembers(sys.modules[__name__])
     if isinstance(obj, BaseTool)
-}
+]

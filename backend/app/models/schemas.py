@@ -35,6 +35,38 @@ class ModelResponse(BaseModel):
     )
 
 
+class Tool(BaseModel):
+    """
+    Tool schema. Returns the name and description of a tool.
+    """
+
+    tool_name: str = Field(
+        ..., description="The name of the tool.", examples=["get_temperature"]
+    )
+    tool_description: str = Field(
+        ...,
+        description="The description of the tool.",
+        examples=["Get the temperature in a given location"],
+    )
+
+
+class ToolResponse(BaseModel):
+    """
+    Tool response schema. Returns the list of available tools.
+    """
+
+    tools: list[Tool] = Field(
+        ...,
+        description="The list of available tools.",
+        examples=[
+            Tool(
+                tool_name="get_temperature",
+                tool_description="Get the temperature in a given location",
+            )
+        ],
+    )
+
+
 class Role(str, Enum):
     """
     Enumeration of possible message roles in a conversation.
@@ -98,9 +130,9 @@ class AegntRequest(BaseModel):
     def get_langchain_messages(self) -> List[AnyMessage]:
         langchain_messages = []
         for openai_message in self.messages:
-            if openai_message.role == "system":
+            if openai_message.role == Role.SYSTEM:
                 langchain_messages.append(SystemMessage(openai_message.content))
-            elif openai_message.role == "assistant":
+            elif openai_message.role == Role.ASSISTANT:
                 langchain_messages.append(AIMessage(openai_message.content))
             else:
                 langchain_messages.append(HumanMessage(openai_message.content))
