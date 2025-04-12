@@ -11,7 +11,7 @@ from app.models.schemas import ToolCall
 
 def create_command(tool_name: str, tool_output: any, tool_call_id: str) -> Command:
     """Helper to create the standard Command object for tool results."""
-    content = str(tool_output)  # Must be string
+    content = str(tool_output)
     return Command(
         update={
             "tools_used": [ToolCall(name=tool_name, output=content)],
@@ -58,9 +58,7 @@ def tool_helper(func):
             stream.send_progress("Partial result 2 data...")
             # ... final work ...
             final_result = "Final aggregated result"
-            # Option 1: Send final result via complete (optional)
-            # stream.send_complete(final_result)
-            # Option 2: Just return, default complete will be sent
+            stream.send_complete(final_result) # Optional: stream out final result
             return final_result
         ```
     """
@@ -99,7 +97,7 @@ class ToolStreamManager:
         final_data = "Process finished successfully."
         # Option 1: Send final data with the complete event
         stream.send_complete(final_data)
-        # Option 2: Send progress, let __exit__ send default complete
+        # Option 2: let __exit__ send default complete
         # stream.send_progress(final_data)
         ```
     """
@@ -118,7 +116,7 @@ class ToolStreamManager:
         tool_tokens: str = None,
         metadata: dict = {},
     ):
-        """Internal helper to format and send stream messages."""
+        """Helper to format and send stream messages."""
 
         write_data = {
             "type": type,
@@ -136,9 +134,7 @@ class ToolStreamManager:
             )
 
     def __enter__(self):
-        """Acquires the stream writer, sends the 'start' event, and sets the context variable.
-        Raises RuntimeError if a stream writer cannot be obtained.
-        """
+        """Acquires the stream writer, sends the 'start' event, and sets the context variable."""
         try:
             self.writer = get_stream_writer()
 
@@ -156,9 +152,7 @@ class ToolStreamManager:
             raise
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        """Sends the default 'complete' event if not already sent manually
-        and no exception occurred.
-        """
+        """Sends the default 'complete' event if not already sent manually."""
         if self.writer and not exc_type and not self._completion_sent:
             self._send("complete")
 
@@ -190,14 +184,9 @@ class ToolStreamManager:
 
 
 def get_current_tool_stream() -> ToolStreamManager:
-    """Gets the ToolStreamManager for the current execution context.
-    Assumes the context is properly set by the @tool_helper decorator,
-    as __enter__ would raise an error otherwise.
-    """
-    # We can now assume __enter__ either succeeded (and set the context var)
-    # or raised an error (preventing this code from being reached).
+    """Gets the ToolStreamManager for the current execution context."""
+
     stream = _current_tool_stream.get()
-    # As a defensive measure, check if stream is unexpectedly None, although this shouldn't happen.
     if stream is None:
         raise RuntimeError(
             "Invariant violation: ToolStreamManager context was unexpectedly None."
