@@ -2,10 +2,10 @@ from fastapi import APIRouter
 
 from app.models.schemas import HealthResponse
 
-router = APIRouter(prefix="/sys", tags=["sys"])
+sys_router = APIRouter(prefix="/sys", tags=["sys"])
 
 
-@router.get(
+@sys_router.get(
     "/health",
     summary="Health Check",
     description="Check the health of the API",
@@ -13,3 +13,6 @@ router = APIRouter(prefix="/sys", tags=["sys"])
 )
 def health() -> HealthResponse:
     return HealthResponse(status="ok")
+
+
+# TODO: add a route to get the logs
