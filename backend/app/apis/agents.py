@@ -5,7 +5,7 @@ from typing import AsyncGenerator
 
 from app.services.graph import create_react_agent
 from app.services.tools import TOOLS_INFO
-from app.models.schemas import AegntRequest, AgentResponse, ModelResponse
+from app.models.schemas import AegntRequest, AgentResponse, ModelResponse, ToolResponse
 from app.models.llmconfig import Model
 from app.utils import format_sse
 
@@ -24,13 +24,14 @@ def get_models() -> ModelResponse:
     return ModelResponse(models=Model.list())
 
 
-@agents_router.get("/tools", summary="list all available tools")
-def get_tools():
+@agents_router.get(
+    "/tools", summary="list all available tools", response_model=ToolResponse
+)
+def get_tools() -> ToolResponse:
     """
-    Lists the currently available tools
+    Get the list of available tools.
     """
-    return TOOLS_INFO
-    # return ToolResponse(tools=TOOLS)
+    return ToolResponse(tools=TOOLS_INFO)
 
 
 @agents_router.post("/invoke", summary="invoke the agent", response_model=AgentResponse)
