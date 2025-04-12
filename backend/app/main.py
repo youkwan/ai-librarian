@@ -5,8 +5,8 @@ from importlib import metadata
 from fastapi.responses import RedirectResponse
 
 from app.core.cors import setup_cors
-from app.apis.sys import router as sys_router
-from app.apis.agent import router as agent_router
+from app.apis.sys import sys_router
+from app.apis.agents import agents_router
 
 
 def create_app() -> FastAPI:
@@ -18,10 +18,10 @@ def create_app() -> FastAPI:
     )
     setup_cors(app)
     app.include_router(sys_router, prefix="/v1")
-    app.include_router(agent_router, prefix="/v1")
+    app.include_router(agents_router, prefix="/v1")
 
     @app.get("/", include_in_schema=False)
-    async def root_redirect():
+    async def redirect_root():
         return RedirectResponse(url="/docs")
 
     return app

@@ -66,7 +66,7 @@ class LLMConfig(BaseModel):
     )
     temperature: float = Field(
         default=1,
-        description="Controls randomness of outputs. Higher values (0.8-1.0) make output more random, lower values (0.2-0.5) make output more deterministic.",
+        description="Controls randomness of outputs. Higher values make output more random, lower values make output more deterministic.",
         examples=[1],
         ge=0,
         le=2,

@@ -3,7 +3,7 @@ from typing import Literal, Dict, List
 from langgraph.graph import StateGraph
 from langgraph.prebuilt import ToolNode
 from langgraph.checkpoint.memory import MemorySaver
-from langchain_core.messages import AnyMessage, AIMessage, SystemMessage, HumanMessage
+from langchain_core.messages import AnyMessage, AIMessage, HumanMessage
 from langchain.chat_models import init_chat_model
 from dotenv import load_dotenv
 
@@ -21,7 +21,6 @@ async def call_llm(state: MessagesState) -> Dict[str, List[AnyMessage]]:
         model_params["max_tokens"] = llm_config.max_tokens
 
     llm = init_chat_model(**model_params)
-
     llm_with_tools = llm.bind_tools(TOOLS)
 
     messages = state.messages
@@ -64,6 +63,8 @@ def create_react_agent(name: str) -> StateGraph:
 
 
 if __name__ == "__main__":
+    from rich.pretty import pprint
+
     load_dotenv()
     react_agent = create_react_agent("react_agent")
     config = {
@@ -72,11 +73,16 @@ if __name__ == "__main__":
         },
     }
 
-    print(
-        asyncio.run(
-            react_agent.ainvoke(
-                {"messages": [HumanMessage("請問1240+1240是多少")]},
-                config,
-            )
-        )
-    )
+    async def stream_tokens():
+        async for event in react_agent.astream(
+            input={
+                "messages": [HumanMessage("what is the temperature in taipei?")],
+                "llm_config": {"model": "openai:gpt-4o-mini", "temperature": 0.5},
+                "max_steps": 10,
+            },
+            config=config,
+            stream_mode=["messages", "custom"],
+        ):
+            pprint(event)
+
+    asyncio.run(stream_tokens())
