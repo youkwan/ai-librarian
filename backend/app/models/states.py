@@ -1,5 +1,5 @@
 import operator
-from typing import Annotated, List
+from typing import Annotated
 from pydantic import BaseModel, Field
 from langgraph.graph import add_messages
 from langchain_core.messages import AnyMessage
@@ -8,12 +8,22 @@ from app.models.llmconfig import LLMConfig
 from app.models.toolcall import ToolCall
 
 
+def tool_accumulator_or_reset(
+    current_list: list[ToolCall], new_update_list: list[ToolCall]
+) -> list[ToolCall]:
+    """Reducer that accumulates tool calls but resets if the update is an empty list."""
+    if new_update_list == []:
+        return []
+    else:
+        return current_list + new_update_list
+
+
 class MessagesStateInput(BaseModel):
-    messages: Annotated[List[AnyMessage], add_messages] = Field(default_factory=list)
+    messages: Annotated[list[AnyMessage], add_messages] = Field(default_factory=list)
     llm_config: LLMConfig = Field(default_factory=LLMConfig)
-    max_steps: int = Field(default=10, ge=1)
 
 
 class MessagesState(MessagesStateInput):
-    current_step: int = Field(default=0)
-    tools_used: Annotated[List[ToolCall], operator.add] = Field(default_factory=list)
+    tools_used: Annotated[list[ToolCall], tool_accumulator_or_reset] = Field(
+        default_factory=list
+    )

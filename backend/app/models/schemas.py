@@ -121,11 +121,6 @@ class AegntRequest(BaseModel):
         default_factory=LLMConfig,
         description="Configuration settings for the Large Language Model processing the request. Controls model selection and generation parameters.",
     )
-    max_steps: int = Field(
-        default=20,
-        ge=1,
-        description="Maximum number of internal LLM reasoning steps or API calls allowed for processing this request. Prevents infinite loops. Default is 10 means it will try to solve problem within 10 steps or less. Increase this value if you want the agent to be able to handle more complex or multi-step requests.",
-    )
 
     def get_langchain_messages(self) -> List[AnyMessage]:
         langchain_messages = []
