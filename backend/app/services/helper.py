@@ -1,4 +1,5 @@
 import functools
+import inspect
 from contextvars import ContextVar
 from typing import Annotated, Literal
 from langchain_core.messages import ToolMessage
@@ -63,16 +64,29 @@ def tool_helper(func):
         ```
     """
 
-    @functools.wraps(func)
-    def wrapper(*args, tool_call_id: Annotated[str, InjectedToolCallId], **kwargs):
-        tool_name = func.__name__
+    tool_name = func.__name__
+    if inspect.iscoroutinefunction(func):
 
-        with ToolStreamManager(tool_name):
-            raw_output = func(*args, tool_call_id=tool_call_id, **kwargs)
+        @functools.wraps(func)
+        async def async_wrapper(
+            *args, tool_call_id: Annotated[str, InjectedToolCallId], **kwargs
+        ):
+            with ToolStreamManager(tool_name):
+                raw_output = await func(*args, tool_call_id=tool_call_id, **kwargs)
+            return create_command(tool_name, raw_output, tool_call_id)
 
-        return create_command(tool_name, raw_output, tool_call_id)
+        return async_wrapper
+    else:
 
-    return wrapper
+        @functools.wraps(func)
+        def sync_wrapper(
+            *args, tool_call_id: Annotated[str, InjectedToolCallId], **kwargs
+        ):
+            with ToolStreamManager(tool_name):
+                raw_output = func(*args, tool_call_id=tool_call_id, **kwargs)
+            return create_command(tool_name, raw_output, tool_call_id)
+
+        return sync_wrapper
 
 
 _current_tool_stream = ContextVar("current_tool_stream", default=None)

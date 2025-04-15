@@ -1,16 +1,19 @@
 from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import StreamingResponse
-from pydantic import ValidationError
 from typing import AsyncGenerator
 
-from app.services.graph import create_react_agent
+from app.services.graph import react_agent
 from app.services.tools import TOOLS_INFO
-from app.models.schemas import AegntRequest, AgentResponse, ModelResponse, ToolResponse
+from app.models.schemas import (
+    AegntRequest,
+    AgentResponse,
+    ModelResponse,
+    ToolResponse,
+)
 from app.models.llmconfig import Model
 from app.utils import format_sse
 
 agents_router = APIRouter(prefix="/agents", tags=["agents"])
-react_agent = create_react_agent("react_agent")
 
 
 @agents_router.get(
@@ -18,7 +21,8 @@ react_agent = create_react_agent("react_agent")
 )
 def get_models() -> ModelResponse:
     """
-    Lists the currently available models
+    Retrieves a list of the LLMs currently configured
+    and available for use with the agent endpoints (`/invoke` and `/stream`).
     """
     # TODO: check if the model is available
     return ModelResponse(models=Model.list())
@@ -29,19 +33,30 @@ def get_models() -> ModelResponse:
 )
 def get_tools() -> ToolResponse:
     """
-    Get the list of available tools.
+    Provides a list of tools that the agent can potentially use during its
+    execution to perform actions or retrieve information.
     """
     return ToolResponse(tools=TOOLS_INFO)
 
 
 @agents_router.post("/invoke", summary="invoke the agent", response_model=AgentResponse)
 async def ainvoke_react_agent(request: AegntRequest) -> AgentResponse:
+    """
+    Processes the request by invoking the agent synchronously and returns the final
+    response once the agent execution is complete. This endpoint is suitable for
+    applications where real-time feedback is not required, and only the final result is needed.
+
+    **Conversation Management:**
+    - **Continuing a Conversation:** To continue an existing conversation, provide the *same* `thread_id` in your request. You only need to include the *new* user message(s) in the `messages` array. The backend automatically retrieves and appends to the existing conversation history associated with that `thread_id`.
+    - **Starting a New Conversation:** To start a new conversation, either:
+        - Provide a *new, unique* `thread_id`.
+        - Omit the `thread_id` field entirely. The backend will generate a new unique `thread_id` for the conversation.
+    """
     try:
         response = await react_agent.ainvoke(
             input={
                 "messages": request.get_langchain_messages(),
                 "llm_config": request.llm_config,
-                "max_steps": request.max_steps,
             },
             config=request.get_runnable_config(),
         )
@@ -85,7 +100,6 @@ async def stream_tokens(request: AegntRequest) -> AsyncGenerator[str, None]:
             input={
                 "messages": request.get_langchain_messages(),
                 "llm_config": request.llm_config,
-                "max_steps": request.max_steps,
             },
             config=request.get_runnable_config(),
             stream_mode=["messages", "custom"],
@@ -148,6 +162,38 @@ async def stream_tokens(request: AegntRequest) -> AsyncGenerator[str, None]:
 
 @agents_router.post("/stream", summary="stream the agent")
 async def stream_react_agent(request: AegntRequest):
+    """
+    Initiates a streaming connection to the agent based on the provided request parameters.
+    This endpoint uses Server-Sent Events (SSE) to push updates from the agent's execution
+    process in real-time. It's suitable for applications requiring immediate feedback or
+    observing the agent's thought process, including LLM token generation and tool call results.
+
+    **Conversation Management:**
+    - **Continuing a Conversation:** To continue an existing conversation, provide the *same* `thread_id` in your request. You only need to include the *new* user message(s) in the `messages` array. The backend automatically retrieves and appends to the existing conversation history associated with that `thread_id`.
+    - **Starting a New Conversation:** To start a new conversation, either:
+        - Provide a *new, unique* `thread_id`.
+        - Omit the `thread_id` field entirely. The backend will generate a new unique `thread_id` for the conversation.
+
+    **Streaming Format:**
+    The server pushes events formatted according to the SSE standard (`text/event-stream`).
+    Each event has an `event` field indicating the type and a `data` field containing a JSON payload.
+    Possible event types include:
+    - `stream.start`: Indicates the stream has successfully started.
+    - `stream.llm_tokens.start`: Signals the beginning of LLM token generation.
+    - `stream.llm_tokens.delta`: Contains a chunk of newly generated LLM tokens.
+    - `stream.llm_tokens.complete`: Signals the end of LLM token generation for a step, providing the full sequence.
+    - `stream.tool_call.start`: Indicates a tool call is about to start. Contains tool name and input.
+    - `stream.tool_call.delta`: Provides intermediate output or progress from a tool call (if the tool supports it).
+    - `stream.tool_call.complete`: Signals the completion of a tool call. May contain the final output.
+    - `stream.completed`: Indicates the entire agent execution process has finished successfully.
+    - `stream.error`: Sent if an error occurs during the streaming process. Contains error details.
+
+    **Important Usage Note:**
+    Standard OpenAPI documentation interfaces like Swagger UI typically **cannot** directly interact
+    with or test SSE endpoints. To consume this stream, you must use a client library or tool
+    that supports Server-Sent Events (e.g., `EventSource` in JavaScript, `httpx` in Python, Postman).
+
+    """
     return StreamingResponse(
         stream_tokens(request),
         media_type="text/event-stream",
