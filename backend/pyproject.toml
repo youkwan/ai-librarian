@@ -1,6 +1,6 @@
 [project]
 name = "ai-librarian-backend"
-version = "0.1.0"
+version = "0.2.0"
 description = "Add your description here"
 requires-python = ">=3.13"
 dependencies = [
@@ -14,5 +14,6 @@ dependencies = [
     "pydantic>=2.11.2",
     "pydantic-settings>=2.8.1",
     "python-dotenv>=1.1.0",
+    "rich>=14.0.0",
     "uvicorn>=0.34.0",
 ]
