@@ -117,7 +117,7 @@ async def stream_tokens(request: AegntRequest) -> AsyncGenerator[str, None]:
                 if ai_message_chunk.response_metadata.get("finish_reason") == "stop":
                     all_llm_tokens = "".join(llm_tokens)
                     yield create_sse_event(
-                        "stream.llm_tokens.complete",
+                        "stream.llm_tokens.completed",
                         {"llm_tokens": all_llm_tokens},
                     )
                     in_llm_phase = False
@@ -150,8 +150,8 @@ async def stream_tokens(request: AegntRequest) -> AsyncGenerator[str, None]:
                     yield create_sse_event("stream.tool_call.start", event_data)
                 elif tool_type == "delta":
                     yield create_sse_event("stream.tool_call.delta", event_data)
-                elif tool_type == "complete":
-                    yield create_sse_event("stream.tool_call.complete", event_data)
+                elif tool_type == "completed":
+                    yield create_sse_event("stream.tool_call.completed", event_data)
 
         if is_stream_started:
             yield create_sse_event("stream.completed")
@@ -181,10 +181,10 @@ async def stream_react_agent(request: AegntRequest):
     - `stream.start`: Indicates the stream has successfully started.
     - `stream.llm_tokens.start`: Signals the beginning of LLM token generation.
     - `stream.llm_tokens.delta`: Contains a chunk of newly generated LLM tokens.
-    - `stream.llm_tokens.complete`: Signals the end of LLM token generation for a step, providing the full sequence.
+    - `stream.llm_tokens.completed`: Signals the end of LLM token generation for a step, providing the full sequence.
     - `stream.tool_call.start`: Indicates a tool call is about to start. Contains tool name and input.
     - `stream.tool_call.delta`: Provides intermediate output or progress from a tool call (if the tool supports it).
-    - `stream.tool_call.complete`: Signals the completion of a tool call. May contain the final output.
+    - `stream.tool_call.completed`: Signals the completion of a tool call. May contain the final output.
     - `stream.completed`: Indicates the entire agent execution process has finished successfully.
     - `stream.error`: Sent if an error occurs during the streaming process. Contains error details.
 
