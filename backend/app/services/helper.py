@@ -39,7 +39,7 @@ def tool_helper(func):
     - Use `get_current_tool_stream().send_progress(...)` to send intermediate updates or partial results.
     - Optionally, use `get_current_tool_stream().send_complete(...)` to send a final result
       along with the completion signal. If `send_complete` is **not** called, a default
-      `complete` event (without data) will be sent automatically upon successful completion.
+      `completed` event (without data) will be sent automatically upon successful completion.
     - Return the final raw result (e.g., a string, int, dict), **not** a `Command` object.
 
     Usage Example:
@@ -94,9 +94,9 @@ _current_tool_stream = ContextVar("current_tool_stream", default=None)
 
 class ToolStreamManager:
     """
-    Manages the streaming lifecycle (start, delta, complete) for a tool call.
+    Manages the streaming lifecycle (start, delta, completed) for a tool call.
 
-    Handles acquiring the stream writer, sending start/delta/complete events,
+    Handles acquiring the stream writer, sending start/delta/completed events,
     and managing the completion state. Intended to be used as a context manager
     via the @tool_helper decorator, which also handles setting/resetting the
     necessary context variable.
@@ -109,9 +109,9 @@ class ToolStreamManager:
         stream.send_progress("Step 1 complete. Starting step 2...")
         # ... perform step 2 ...
         final_data = "Process finished successfully."
-        # Option 1: Send final data with the complete event
+        # Option 1: Send final data with the completed event
         stream.send_complete(final_data)
-        # Option 2: let __exit__ send default complete
+        # Option 2: let __exit__ send default completed event
         # stream.send_progress(final_data)
         ```
     """
@@ -126,7 +126,7 @@ class ToolStreamManager:
 
     def _send(
         self,
-        type: Literal["start", "delta", "complete"],
+        type: Literal["start", "delta", "completed"],
         tool_tokens: str = None,
         metadata: dict = {},
     ):
@@ -166,9 +166,9 @@ class ToolStreamManager:
             raise
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        """Sends the default 'complete' event if not already sent manually."""
+        """Sends the default 'completed' event if not already sent manually."""
         if self.writer and not exc_type and not self._completion_sent:
-            self._send("complete")
+            self._send("completed")
 
         self._completion_sent = True
 
@@ -187,13 +187,13 @@ class ToolStreamManager:
             self._send("delta", tool_tokens, metadata)
 
     def send_complete(self, tool_tokens: str = None, metadata: dict = {}):
-        """Sends the complete event, optionally with final tool call result."""
+        """Sends the completed event, optionally with final tool call result."""
         if self._completion_sent:
             raise RuntimeError(
                 f"Attempted to send completion for {self.tool_name} multiple times."
             )
         else:
-            self._send("complete", tool_tokens, metadata)
+            self._send("completed", tool_tokens, metadata)
             self._completion_sent = True
 
 
