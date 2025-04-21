@@ -104,15 +104,15 @@ class ToolStreamManager:
     Usage Example (within a tool function decorated by @tool_helper):
         ```python
         stream = get_current_tool_stream()
-        stream.send_progress("Starting step 1...")
+        stream.send_partial_result("partial result 1...")
         # ... perform step 1 ...
-        stream.send_progress("Step 1 complete. Starting step 2...")
+        stream.send_partial_result("partial result 2...")
         # ... perform step 2 ...
         final_data = "Process finished successfully."
         # Option 1: Send final data with the completed event
         stream.send_complete(final_data)
         # Option 2: let __exit__ send default completed event
-        # stream.send_progress(final_data)
+        # stream.send_partial_result(final_data)
         ```
     """
 
@@ -177,7 +177,7 @@ class ToolStreamManager:
 
         return False
 
-    def send_progress(self, tool_tokens: str, metadata: dict = {}):
+    def send_partial_result(self, tool_tokens: str, metadata: dict = {}):
         """Sends an intermediate progress update during tool execution."""
         if self._completion_sent:
             raise RuntimeError(

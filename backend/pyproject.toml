@@ -4,9 +4,11 @@ version = "0.2.0"
 description = "Add your description here"
 requires-python = ">=3.13"
 dependencies = [
+    "duckduckgo-search>=8.0.1",
     "fastapi>=0.115.12",
     "langchain>=0.3.23",
     "langchain-anthropic>=0.3.10",
+    "langchain-community>=0.3.21",
     "langchain-google-genai>=2.1.2",
     "langchain-groq>=0.3.2",
     "langchain-openai>=0.3.12",

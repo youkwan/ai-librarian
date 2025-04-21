@@ -2,6 +2,8 @@ from pathlib import Path
 from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from app.models.llmconfig import Model
+
 # Define the path to the .env file
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 DOTENV_PATH = BASE_DIR / ".env"
@@ -20,8 +22,8 @@ class Settings(BaseSettings):
     allowed_origins: list[str] | None = Field(default_factory=list)
 
     # Default llm to use in agent
-    default_llm: str = "gpt-4o-mini"
-    default_temperature: float = 1.0
+    default_llm: Model = Model.GPT_4O_MINI
+    default_temperature: float = Field(default=1.0, ge=0.0, le=2.0)
     default_max_tokens: int | None = None
 
     # LLM API keys
@@ -34,6 +36,9 @@ class Settings(BaseSettings):
     langsmith_tracing: bool = False
     langsmith_project: str | None = None
     langsmith_api_key: str | None = None
+
+    # DuckDuckGo settings
+    max_web_search_results: int = Field(default=5, gt=0)
 
     @model_validator(mode="after")
     def check_at_least_one_llm_api_key(self) -> "Settings":
@@ -60,10 +65,10 @@ class Settings(BaseSettings):
         return self
 
 
-settings = Settings()
+SETTINGS = Settings()
 
 
 if __name__ == "__main__":
     from rich.pretty import pprint
 
-    pprint(settings)
+    pprint(SETTINGS)
