@@ -44,6 +44,14 @@ class Settings(BaseSettings):
     google_books_api_key: str | None = None
     max_google_books_search_results: int = Field(default=5, gt=0)
 
+    # Arxiv setting
+    top_k_results: int = 3
+    arxiv_max_query_length: int = 300
+    continue_on_failure: bool = False
+    load_max_docs: int = 100
+    load_all_available_meta: bool = False
+    doc_content_chars_max: int = 40000
+
     @model_validator(mode="after")
     def check_at_least_one_llm_api_key(self) -> "Settings":
         if all(
