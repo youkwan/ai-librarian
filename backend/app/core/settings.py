@@ -37,8 +37,12 @@ class Settings(BaseSettings):
     langsmith_project: str | None = None
     langsmith_api_key: str | None = None
 
-    # DuckDuckGo settings
+    # DuckDuckGo setting
     max_web_search_results: int = Field(default=5, gt=0)
+
+    # Google Books setting
+    google_books_api_key: str | None = None
+    max_google_books_search_results: int = Field(default=5, gt=0)
 
     @model_validator(mode="after")
     def check_at_least_one_llm_api_key(self) -> "Settings":
@@ -65,10 +69,10 @@ class Settings(BaseSettings):
         return self
 
 
-SETTINGS = Settings()
+settings = Settings()
 
 
 if __name__ == "__main__":
     from rich.pretty import pprint
 
-    pprint(SETTINGS)
+    pprint(settings)

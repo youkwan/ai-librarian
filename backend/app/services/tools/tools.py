@@ -8,8 +8,9 @@ from langchain_core.tools import tool
 from langchain_core.tools.base import InjectedToolCallId, BaseTool
 from duckduckgo_search import DDGS
 
-from app.services.helper import tool_helper, get_current_tool_stream
-from app.core.settings import SETTINGS
+from app.services.tools.google_books import GoogleBooksClient
+from app.services.tools.helper import tool_helper, get_current_tool_stream
+from app.core.settings import settings
 
 
 @tool
@@ -84,14 +85,50 @@ async def get_current_weather(
 
 @tool
 @tool_helper
+async def search_google_books(
+    tool_call_id: Annotated[str, InjectedToolCallId],
+    query: str,
+) -> str:
+    """Searches the Google Books API for books matching a given query.
+
+    Args:
+        query: Required. The search query string (e.g., book title, author, topic).
+
+    Returns:
+        A formatted string containing the top book suggestions found for the query,
+        including title, authors, summary, and a link.
+        If no books are found, it returns a message indicating that.
+        If an API error occurs, it returns an error message.
+
+        Example format for successful results::
+
+            Here are 5 suggestions for books related to 'artificial intelligence':
+
+            1. "Artificial Intelligence: A Modern Approach" by Stuart Russell and Peter Norvig: Summary...
+            You can read more at http://...
+
+            2. "Book Title 2" by Author Name: Summary...
+            You can read more at http://...
+
+            ...
+    """
+    stream = get_current_tool_stream()
+
+    google_books_client = GoogleBooksClient()
+    result = await google_books_client.arun(query)
+    stream.send_complete(result)
+    return result
+
+
+@tool
+@tool_helper
 def search_web(
     tool_call_id: Annotated[str, InjectedToolCallId],
     keywords: str,
     focus_on_news: bool = False,
     region: str = "wt-wt",
 ) -> str:
-    """
-    Searches the web using DuckDuckGo to find information based on the provided keywords.
+    """Searches the web using DuckDuckGo to find information based on the provided keywords.
 
     This tool is useful for finding up-to-date information or answers to specific questions.
 
@@ -191,19 +228,22 @@ def search_web(
         A string containing the search results, typically a list of snippets including title, URL, and description for each result. The format may vary based on the search engine's response.
     """
     stream = get_current_tool_stream()
-
-    if focus_on_news:
-        result = DDGS().news(
-            keywords,
-            max_results=SETTINGS.max_web_search_results,
-            region=region,
-        )
-    else:
-        result = DDGS().text(
-            keywords,
-            max_results=SETTINGS.max_web_search_results,
-            region=region,
-        )
+    try:
+        if focus_on_news:
+            result = DDGS().news(
+                keywords,
+                max_results=settings.max_web_search_results,
+                region=region,
+            )
+        else:
+            result = DDGS().text(
+                keywords,
+                max_results=settings.max_web_search_results,
+                region=region,
+            )
+    except Exception as e:
+        stream.send_error(f"Error: {e}")
+        return f"Error: {e}"
     stream.send_complete(tool_tokens=result)
     return result
 

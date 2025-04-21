@@ -2,8 +2,7 @@ from pydantic import BaseModel, Field
 
 
 class ToolCall(BaseModel):
-    """
-    Record of an external tool usage by the LLM during response generation.
+    """Record of an external tool usage by the LLM during response generation.
     Captures both the tool name and its output result.
     """
 
