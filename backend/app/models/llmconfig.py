@@ -3,8 +3,7 @@ from pydantic import BaseModel, Field
 
 
 class Model(str, Enum):
-    """
-    Enumeration of supported language models (LLMs).
+    """Enumeration of supported language models (LLMs).
     This enum can be extended with any model listed in the LangChain chat models documentation:
     https://python.langchain.com/docs/integrations/chat/
 
@@ -54,8 +53,7 @@ class Model(str, Enum):
 
 
 class LLMConfig(BaseModel):
-    """
-    The settings behind the Agent's LLM core.
+    """The settings behind the Agent's LLM core.
     Controls the behavior and output characteristics of the language model.
     """
 

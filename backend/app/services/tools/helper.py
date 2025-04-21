@@ -93,8 +93,7 @@ _current_tool_stream = ContextVar("current_tool_stream", default=None)
 
 
 class ToolStreamManager:
-    """
-    Manages the streaming lifecycle (start, delta, completed) for a tool call.
+    """Manages the streaming lifecycle (start, delta, completed) for a tool call.
 
     Handles acquiring the stream writer, sending start/delta/completed events,
     and managing the completion state. Intended to be used as a context manager

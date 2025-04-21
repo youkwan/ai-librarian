@@ -5,9 +5,8 @@ from langgraph.prebuilt import ToolNode
 from langgraph.checkpoint.memory import MemorySaver
 from langchain_core.messages import AnyMessage, AIMessage, HumanMessage
 from langchain.chat_models import init_chat_model
-from dotenv import load_dotenv
 
-from app.services.tools import TOOLS
+from app.services.tools.tools import TOOLS
 from app.models.states import MessagesState, MessagesStateInput
 
 
@@ -71,6 +70,7 @@ react_agent = create_react_agent("react_agent")
 
 if __name__ == "__main__":
     from rich.pretty import pprint
+    from dotenv import load_dotenv
 
     load_dotenv()
     config = {
