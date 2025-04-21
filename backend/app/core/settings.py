@@ -52,6 +52,12 @@ class Settings(BaseSettings):
     load_all_available_meta: bool = False
     doc_content_chars_max: int = 40000
 
+    # Wikipedia setting
+    wikipedia_lang: str = "en"
+    wikipedia_top_k_results: int = 3
+    wikipedia_load_all_available_meta: bool = False
+    wikipedia_doc_content_chars_max: int = 4000
+
     @model_validator(mode="after")
     def check_at_least_one_llm_api_key(self) -> "Settings":
         if all(

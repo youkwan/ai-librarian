@@ -6,8 +6,9 @@ from typing import Annotated
 from datetime import datetime
 from duckduckgo_search import DDGS
 from langchain_core.tools import tool
+from langchain_community.tools import WikipediaQueryRun
 from langchain_core.tools.base import InjectedToolCallId, BaseTool
-from langchain_community.utilities import ArxivAPIWrapper
+from langchain_community.utilities import ArxivAPIWrapper, WikipediaAPIWrapper
 
 from app.services.tools.google_books import GoogleBooksClient
 from app.services.tools.helper import tool_helper, get_current_tool_stream
@@ -127,7 +128,46 @@ def search_arxiv(
     tool_call_id: Annotated[str, InjectedToolCallId],
     query: str,
 ) -> str:
-    """Searches the Arxiv API for papers matching a given query."""
+    """Searches the Arxiv API for academic papers matching a given query.
+
+    This tool is useful for finding research papers, preprints, and technical documents
+    in various scientific fields.
+
+    Args:
+        query: Required. The search query string (e.g., paper title, author, topic, or keywords).
+              You can use specific search operators to refine your search:
+              - author: Search by author name (e.g., "author:Einstein")
+              - title: Search in paper titles (e.g., "title:quantum")
+              - abstract: Search in abstracts (e.g., "abstract:machine learning")
+              - category: Search by subject category (e.g., "cat:cs.AI")
+
+    Returns:
+        A formatted string containing the top research papers found for the query.
+        Each paper entry includes:
+        - Title
+        - Authors
+        - Abstract
+        - Publication date
+        - arXiv ID
+        - Link to the paper
+
+        If no papers are found, it returns a message indicating that.
+        If an API error occurs, it returns an error message.
+
+        Example output::
+
+            Published: 2023-01-01
+            Title: Example Paper Title
+            Authors: Author1, Author2, Author3
+            Summary: This is a brief summary of the paper...
+            Link: https://arxiv.org/abs/1234.5678
+
+            Published: 2023-01-02
+            Title: Another Paper Title
+            Authors: Author4, Author5
+            Summary: Another brief summary...
+            Link: https://arxiv.org/abs/8765.4321
+    """
     stream = get_current_tool_stream()
     arxiv = ArxivAPIWrapper(
         top_k_results=settings.top_k_results,
@@ -139,6 +179,64 @@ def search_arxiv(
     result = arxiv.run(query)
     stream.send_complete(result)
     return result
+
+
+@tool
+@tool_helper
+def search_wikipedia(
+    tool_call_id: Annotated[str, InjectedToolCallId],
+    query: str,
+) -> str:
+    """Searches Wikipedia for articles matching a given query.
+
+    This tool is useful for finding general knowledge, historical information,
+    and detailed explanations about various topics.
+
+    Args:
+        query: Required. The search query string (e.g., topic, person, event, or concept).
+              You can use specific search operators to refine your search:
+              - intitle: Search in article titles (e.g., "intitle:Python")
+              - insource: Search in article source text (e.g., "insource:programming")
+              - prefix: Search for articles with specific prefix (e.g., "prefix:Category:")
+              - namespace: Search in specific namespaces (e.g., "namespace:Help")
+
+    Returns:
+        A formatted string containing the Wikipedia article(s) found for the query.
+        Each article entry includes:
+        - Title
+        - Summary of the article content
+        - Link to the full article
+
+        If no articles are found, it returns a message indicating that.
+        If an API error occurs, it returns an error message.
+
+        Example output::
+
+            Page: Example Article
+            Summary: This is a brief summary of the article content...
+            Link: https://en.wikipedia.org/wiki/Example_Article
+
+            Page: Another Article
+            Summary: Another brief summary...
+            Link: https://en.wikipedia.org/wiki/Another_Article
+    """
+    stream = get_current_tool_stream()
+    wikipedia = WikipediaQueryRun(
+        api_wrapper=WikipediaAPIWrapper(
+            top_k_results=settings.wikipedia_top_k_results,
+            lang=settings.wikipedia_lang,
+            load_all_available_meta=settings.wikipedia_load_all_available_meta,
+            doc_content_chars_max=settings.wikipedia_doc_content_chars_max,
+        )
+    )
+
+    try:
+        result = wikipedia.run(query)
+        stream.send_complete(result)
+        return result
+    except Exception as e:
+        stream.send_error(f"Error: {e}")
+        return f"Error: {e}"
 
 
 @tool
