@@ -4,6 +4,7 @@ version = "0.2.0"
 description = "Add your description here"
 requires-python = ">=3.13"
 dependencies = [
+    "arxiv>=2.2.0",
     "duckduckgo-search>=8.0.1",
     "fastapi>=0.115.12",
     "langchain>=0.3.23",

@@ -1,12 +1,13 @@
+import httpx
 import asyncio
 import inspect
 import sys
 from typing import Annotated
 from datetime import datetime
-import httpx
+from duckduckgo_search import DDGS
 from langchain_core.tools import tool
 from langchain_core.tools.base import InjectedToolCallId, BaseTool
-from duckduckgo_search import DDGS
+from langchain_community.utilities import ArxivAPIWrapper
 
 from app.services.tools.google_books import GoogleBooksClient
 from app.services.tools.helper import tool_helper, get_current_tool_stream
@@ -116,6 +117,26 @@ async def search_google_books(
 
     google_books_client = GoogleBooksClient()
     result = await google_books_client.arun(query)
+    stream.send_complete(result)
+    return result
+
+
+@tool
+@tool_helper
+def search_arxiv(
+    tool_call_id: Annotated[str, InjectedToolCallId],
+    query: str,
+) -> str:
+    """Searches the Arxiv API for papers matching a given query."""
+    stream = get_current_tool_stream()
+    arxiv = ArxivAPIWrapper(
+        top_k_results=settings.top_k_results,
+        ARXIV_MAX_QUERY_LENGTH=settings.arxiv_max_query_length,
+        load_max_docs=settings.load_max_docs,
+        load_all_available_meta=settings.load_all_available_meta,
+        doc_content_chars_max=settings.doc_content_chars_max,
+    )
+    result = arxiv.run(query)
     stream.send_complete(result)
     return result
 
