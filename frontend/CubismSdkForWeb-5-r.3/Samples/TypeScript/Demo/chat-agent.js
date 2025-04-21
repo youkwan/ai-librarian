@@ -7,14 +7,14 @@ async function checkHealth() {
     const data = await res.json();
 
     if (res.ok && data.status === "ok") {
-      healthStatus.textContent = "✅ Service is running";
+      healthStatus.textContent = "✅";
       healthStatus.style.color = "green";
     } else {
-      healthStatus.textContent = "❌ Service error";
+      healthStatus.textContent = "❌";
       healthStatus.style.color = "red";
     }
   } catch (err) {
-    healthStatus.textContent = "❌ Cannot connect";
+    healthStatus.textContent = "❌";
     healthStatus.style.color = "red";
   }
 }
@@ -124,25 +124,45 @@ document.getElementById('submitBtn')?.addEventListener('click', async () => {
                 const data = JSON.parse(eventData);
 
                 switch (eventType) {
+                  case "stream.start":
+                    console.log("🟢 Stream started");
+                    break;
+                
+                  case "stream.llm_tokens.start":
+                    appendMessage("assistant", " 開始生成回應");
+                    break;
+                
                   case "stream.llm_tokens.delta":
                     assistantReply += data.llm_tokens;
                     assistantContentRef.textContent = assistantReply;
                     break;
-
+                
+                  case "stream.llm_tokens.completed":
+                    appendMessage("assistant", " 回應生成完成");
+                    break;
+                
                   case "stream.tool_call.start":
-                    appendMessage("tool", `🛠️ ${data.tool_name} 啟動`);
+                    appendMessage("tool", ` ${data.tool_name} 啟動`);
                     break;
-
-                  case "stream.tool_call.complete":
-                    appendMessage("tool", `🛠️${data.tool_name} 完成`);
+                
+                  case "stream.tool_call.delta":
+                    appendMessage("tool", ` ${data.tool_name} 執行中`);
                     break;
-
+                
+                  case "stream.tool_call.completed":
+                    appendMessage("tool", ` ${data.tool_name} 完成`);
+                    break;
+                
                   case "stream.completed":
-                    console.log("✅ Stream completed.");
+                    console.log(" Agent 邏輯執行完成");
                     break;
-
+                
                   case "stream.error":
-                    appendMessage("assistant", `❌ 錯誤：${data.error}`);
+                    appendMessage("assistant", ` 錯誤：${data.error}`);
+                    break;
+                
+                  default:
+                    console.warn("⚠️ 未處理事件類型：", eventType, data);
                     break;
                 }
               } catch (err) {
@@ -161,7 +181,13 @@ document.getElementById('submitBtn')?.addEventListener('click', async () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       });
+      const data = await res.json();  
 
+      const assistantMessage = data.messages?.reverse().find(msg => msg.role === "assistant");
+      if (assistantMessage && assistantMessage.content) {
+        assistantContentRef.textContent = assistantMessage.content;  
+        assistantContentRef.textContent = "沒有找到 agent 回覆";
+      }
 
 
       if (Array.isArray(data.tools_used)) {
@@ -177,4 +203,11 @@ document.getElementById('submitBtn')?.addEventListener('click', async () => {
   }
 
   textInput.value = "";
+});
+
+textInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    document.getElementById('submitBtn').click();
+    e.preventDefault();
+  }
 });
