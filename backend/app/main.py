@@ -22,7 +22,7 @@ def create_app() -> FastAPI:
 
     @app.get("/", include_in_schema=False)
     async def redirect_root():
-        return RedirectResponse(url="/docs")
+        return RedirectResponse(url="/redoc")
 
     return app
 
