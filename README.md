@@ -7,19 +7,26 @@ Follow these steps to install and set up:
 1.  **Clone the Repository:**
     ```bash
     git clone https://github.com/youkwan/ai-librarian.git
-    cd ./ai-librarian/backend/
     ```
 
-2.  **Install uv(if not already installed):**
+2.  **Configure Environment Variables:**
+    Copy the example environment file:
+    ```bash
+    cp .env.example .env
+    ```
+    Then, open the `.env` file with a text editor and fill in the required configuration values (e.g., OPENAI API key, LangSmith API key, etc.).
+
+3.  **Install uv(if not already installed):**
     This project uses [uv](https://github.com/astral-sh/uv) to manage the virtual environment and dependencies. If you don't have uv installed, follow the [official installation guide](https://docs.astral.sh/uv/getting-started/installation/).
 
-3.  **Create Virtual Environment:**
+4.  **Create Virtual Environment:**
     In the `backend` directory, run:
     ```bash
+    cd ./ai-librarian/backend/
     uv venv
     ```
 
-3.  **Activate Virtual Environment:**
+5.  **Activate Virtual Environment:**
     Activate the environment based on your operating system and terminal:
 
     *   **Linux / macOS (Bash/Zsh):**
@@ -31,21 +38,14 @@ Follow these steps to install and set up:
         .venv\Scripts\activate
         ```
 
-4.  **Install Dependencies:**
+6.  **Install Dependencies:**
     With the virtual environment activated, run:
     ```bash
     uv pip install -e .
     ```
     This command reads the `pyproject.toml` file and installs all necessary Python packages.
 
-5.  **Configure Environment Variables:**
-    Copy the example environment file:
-    ```bash
-    cp .env.example .env
-    ```
-    Then, open the `.env` file in the `backend` directory with a text editor and fill in the required configuration values (e.g., OPENAI API key, LangSmith API key, etc.).
-
-6.  **Start the Application:**
+7.  **Start the Application:**
     In the `backend` directory, run:
     ```bash
     uv run .\app\main.py

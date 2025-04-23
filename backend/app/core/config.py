@@ -4,8 +4,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from app.models.llmconfig import Model
 
-# Define the path to the .env file
-BASE_DIR = Path(__file__).resolve().parent.parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
 DOTENV_PATH = BASE_DIR / ".env"
 
 if not DOTENV_PATH.is_file():
@@ -13,7 +12,11 @@ if not DOTENV_PATH.is_file():
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=str(DOTENV_PATH), env_ignore_empty=True)
+    model_config = SettingsConfigDict(
+        env_file=str(DOTENV_PATH),
+        env_ignore_empty=True,
+        extra="ignore",
+    )
 
     # API settings
     debug: bool = False
