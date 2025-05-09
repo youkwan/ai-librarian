@@ -1,32 +1,51 @@
 <template>
-  <div id="input-container">
-    <div>
-      <strong>狀態：</strong>
-      <span :style="{ color: healthColor }">{{ healthStatusText }}</span>
+  <div id="gemini-chat-container">
+    <div class="chat-header">
+      <div class="header-title">AI 助理</div>
+      <div class="status-indicators">
+        <span :style="{ color: healthColor, marginRight: '10px', fontSize: '0.85em' }">
+          {{ healthStatusText }}
+        </span>
+        <span class="mode-indicator" @click="toggleAgentMode" :title="`點擊切換到 ${useStreamAgent ? '呼叫模式' : '串流模式'}`">
+          {{ agentStatusTextShort }}
+        </span>
+      </div>
     </div>
-
-    <div>
-      <strong>模式：</strong><span>{{ agentStatusText }}</span>
-      <button @click="toggleAgentMode">mode</button>
-    </div>
-
-    <input type="text" v-model="userInput" placeholder="輸入訊息..." @keydown.enter.prevent="sendMessage"
-      :disabled="isThinking" />
-    <button @click="sendMessage" :disabled="isThinking">
-      {{ isThinking ? '傳送中...' : '送出' }}
-    </button>
 
     <div id="chatBox" ref="chatBoxRef">
-      <div v-for="(msg, index) in messages" :key="index" class="message">
-        <span :class="msg.role">{{ getRoleDisplayName(msg.role) }}：</span>
-        <span class="content">{{ msg.content }}</span>
+      <div v-for="(msg, index) in messages" :key="index" class="message-row" :class="`message-row-${msg.role}`">
+        <div class="message-bubble" :class="`message-bubble-${msg.role}`">
+          <div class="message-content">
+            <div v-if="msg.role !== 'user' && msg.role !== 'tool'" class="role-name">{{ getRoleDisplayName(msg.role) }}
+            </div>
+            <div class="text-content" v-html="formatMessageContent(msg.content)"></div>
+            <div v-if="msg.role === 'tool'" class="tool-output-indicator">工具執行結果</div>
+          </div>
+        </div>
       </div>
-      <div v-if="currentAssistantMessage !== null" class="message">
-        <span class="assistant">agent：</span>
-        <span class="content">{{ currentAssistantMessage || 'Thinking...' }}</span>
+      <div v-if="isThinking || (currentAssistantMessage && currentAssistantMessage.trim() !== '')"
+        class="message-row message-row-assistant">
+        <div class="message-bubble message-bubble-assistant">
+          <div class="message-content">
+            <div class="role-name">{{ getRoleDisplayName('assistant') }}</div>
+            <div class="text-content"
+              v-html="currentAssistantMessage ? formatMessageContent(currentAssistantMessage) : thinkingDots"></div>
+          </div>
+        </div>
       </div>
     </div>
 
+    <div class="input-area-container">
+      <div class="input-wrapper">
+        <textarea ref="userInputRef" v-model="userInput" placeholder="在這裡輸入訊息..." @keydown.enter="handleEnterKey"
+          :disabled="isThinking" class="user-input" rows="1" @input="autoGrowTextarea"></textarea>
+        <button @click="sendMessage" :disabled="isThinking || !userInput.trim()" class="send-button" title="送出訊息">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="24" height="24">
+            <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
+          </svg>
+        </button>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -38,50 +57,76 @@ const healthCheckInterval = ref(null);
 const messages = ref([]);
 const userInput = ref('');
 const threadId = ref(null);
-const useStreamAgent = ref(false);
+const useStreamAgent = ref(true);
 const isThinking = ref(false);
 const currentAssistantMessage = ref(null);
 const chatBoxRef = ref(null);
+const userInputRef = ref(null);
+
+const thinkingDots = ref('<span class="dot">.</span><span class="dot">.</span><span class="dot">.</span>');
+let thinkingInterval;
+
+// 加入工具訊息追蹤
+const toolMessageMap = new Map(); // key: tool_name, value: index in messages
+
+
+
+// 移除了 onAvatarError，因為不再需要頭像
+
+const formatMessageContent = (content) => {
+  if (typeof content !== 'string') return '';
+  return content
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;')
+    .replace(/\n/g, '<br>');
+};
 
 const healthStatusText = computed(() => {
-  if (healthStatus.value === 'ok') return '✅';
-  if (healthStatus.value === 'error') return '❌';
-  return '檢查中...';
+  if (healthStatus.value === 'ok') return '連線狀態：良好';
+  if (healthStatus.value === 'error') return '連線狀態：異常';
+  return '連線狀態：檢查中';
 });
 
 const healthColor = computed(() => {
-  if (healthStatus.value === 'ok') return 'green';
-  if (healthStatus.value === 'error') return 'red';
-  return 'grey';
+  if (healthStatus.value === 'ok') return '#1e8e3e';
+  if (healthStatus.value === 'error') return '#d93025';
+  return '#70757a';
 });
 
-const agentStatusText = computed(() => useStreamAgent.value ? 'Stream' : 'Invoke');
+const agentStatusTextShort = computed(() => (useStreamAgent.value ? '串流' : '呼叫'));
 
 async function checkHealth() {
   try {
     const res = await fetch("http://localhost:8000/v1/sys/health");
-    const data = await res.json();
-    if (res.ok && data.status === "ok") {
-      healthStatus.value = 'ok';
-    } else {
+    if (!res.ok) {
+      console.warn(`健康檢查失敗，狀態碼: ${res.status}`);
       healthStatus.value = 'error';
+      return;
     }
+    const data = await res.json();
+    healthStatus.value = data.status === "ok" ? 'ok' : 'error';
   } catch (err) {
-    console.error("檢查失敗:", err);
+    console.error("健康檢查請求失敗:", err);
     healthStatus.value = 'error';
   }
 }
 
 function getRoleDisplayName(role) {
   switch (role) {
-    case 'user': return 'user';
-    case 'assistant': return 'agent';
-    case 'tool': return 'tool';
-    default: return role;
+    case 'user': return '您';
+    case 'assistant': return 'AI 助理';
+    case 'tool': return '工具';
+    default: return role.charAt(0).toUpperCase() + role.slice(1);
   }
 }
 
 function appendMessage(role, content) {
+  if (role === 'assistant' && content.trim() === '' && !currentAssistantMessage.value) {
+    return;
+  }
   messages.value.push({ role, content });
   scrollToBottom();
 }
@@ -95,32 +140,65 @@ async function scrollToBottom() {
 }
 
 function toggleAgentMode() {
+  if (isThinking.value) return;
   useStreamAgent.value = !useStreamAgent.value;
 }
+
+const autoGrowTextarea = () => {
+  const textarea = userInputRef.value;
+  if (textarea) {
+    textarea.style.height = 'auto';
+    textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`;
+  }
+};
+
+const handleEnterKey = (event) => {
+  if (event.key === 'Enter' && !event.shiftKey) {
+    event.preventDefault();
+    sendMessage();
+  }
+};
 
 async function sendMessage() {
   const text = userInput.value.trim();
   if (!text || isThinking.value) return;
 
   if (!threadId.value) {
-    threadId.value = `thread-${crypto.randomUUID()}`;
+    threadId.value = `thread-${self.crypto.randomUUID()}`;
   }
 
   appendMessage('user', text);
   userInput.value = '';
+  if (userInputRef.value) {
+    userInputRef.value.style.height = 'auto';
+  }
   isThinking.value = true;
   currentAssistantMessage.value = '';
+
+  let dotCount = 0;
+  clearInterval(thinkingInterval);
+  thinkingInterval = setInterval(() => {
+    dotCount = (dotCount + 1) % 4;
+    let dots = '';
+    for (let i = 0; i < dotCount; i++) {
+      dots += '<span class="dot animate">.</span>';
+    }
+    if (!currentAssistantMessage.value) {
+      thinkingDots.value = dots || '<span class="dot thinking-placeholder-dot">.</span>';
+    }
+  }, 500);
 
   const payload = {
     thread_id: threadId.value,
     messages: [
-      { role: "system", content: "You are a helpful assistant." },
+      { role: "system", content: "You are a helpful, creative, and friendly AI assistant, in the style of Gemini." },
+      ...messages.value.filter(m => m.role === 'user' || m.role === 'assistant').slice(-10),
       { role: "user", content: text }
     ],
     llm_config: {
       model: "openai:gpt-4o-mini",
-      temperature: 1,
-      max_tokens: null
+      temperature: 0.7,
+      max_tokens: 2000,
     }
   };
 
@@ -131,324 +209,478 @@ async function sendMessage() {
       await invokeAgentRequest(payload);
     }
   } catch (error) {
-    console.error("發送訊息時出錯:", error);
-    appendMessage('assistant', `❌ 錯誤：${error.message}`);
-    currentAssistantMessage.value = null;
+    console.error("發送訊息時捕獲到未處理的錯誤:", error);
+    appendMessage('assistant', `❌ 糟糕，似乎發生了一些問題：${error.message}`);
   } finally {
     isThinking.value = false;
+    clearInterval(thinkingInterval);
+    thinkingDots.value = '';
     scrollToBottom();
   }
 }
 
 async function invokeAgentRequest(payload) {
+  currentAssistantMessage.value = null;
   try {
     const res = await fetch("http://localhost:8000/v1/agents/invoke", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "Accept": "application/json" },
       body: JSON.stringify(payload)
     });
 
     if (!res.ok) {
-      throw new Error(`HTTP 錯誤！ 狀態碼： ${res.status}`);
+      const errorText = await res.text();
+      throw new Error(`伺服器錯誤 ${res.status}: ${errorText || res.statusText}`);
     }
 
     const data = await res.json();
-
-    const assistantMessage = data.messages?.slice().reverse().find(msg => msg.role === "assistant");
-    if (assistantMessage) {
-      appendMessage('assistant', assistantMessage.content);
+    const assistantMessages = data.messages?.filter(msg => msg.role === "assistant" && msg.content);
+    if (assistantMessages && assistantMessages.length > 0) {
+      assistantMessages.forEach(msg => appendMessage('assistant', msg.content));
     } else {
-      appendMessage('assistant', '(無回應內容)');
+      appendMessage('assistant', '(AI 沒有提供回應)');
     }
 
     if (Array.isArray(data.tools_used)) {
       data.tools_used.forEach(tool => {
         if (tool.name) {
-          appendMessage('tool', `✅ ${tool.name}`);
+          appendMessage('tool', `工具 '${tool.name}' 已執行。輸出: ${JSON.stringify(tool.tool_output) || '(無輸出)'}`);
         }
       });
     }
   } catch (err) {
-    console.error("呼叫 Agent 時出錯:", err);
-    appendMessage('assistant', `❌ 呼叫錯誤： ${err.message}`);
+    console.error("呼叫 (Invoke) Agent 時出錯:", err);
+    appendMessage('assistant', `❌ 呼叫 AI 時發生錯誤： ${err.message}`);
   } finally {
+    isThinking.value = false;
+    clearInterval(thinkingInterval);
     currentAssistantMessage.value = null;
   }
 }
 
 async function streamAgentRequest(payload) {
-  let finalAssistantReply = "";
+  let accumulatedAssistantReply = "";
 
   try {
     const response = await fetch("http://localhost:8000/v1/agents/stream", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "Accept": "text/event-stream" },
       body: JSON.stringify(payload)
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP 錯誤！ 狀態碼： ${response.status}`);
+      const errorText = await response.text();
+      throw new Error(`伺服器錯誤 ${response.status}: ${errorText || response.statusText}`);
     }
     if (!response.body) {
-      throw new Error("回應 body 為空");
+      throw new Error("回應 body 為空，無法讀取串流。");
     }
 
     const reader = response.body.getReader();
     const decoder = new TextDecoder("utf-8");
     let buffer = "";
-    let eventType = null;
-    let eventData = "";
 
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
 
       buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split("\n");
-      buffer = lines.pop() || "";
+      let boundary = buffer.indexOf("\n\n");
+      while (boundary !== -1) {
+        const eventBlock = buffer.substring(0, boundary);
+        buffer = buffer.substring(boundary + 2);
 
-      for (const line of lines) {
-        if (line.startsWith("event: ")) {
-          eventType = line.slice(7).trim();
-        } else if (line.startsWith("data: ")) {
-          eventData += line.slice(6).trim();
-        } else if (line.trim() === "") {
-          if (eventType && eventData) {
-            try {
-              const data = JSON.parse(eventData);
+        let eventType = "message";
+        let eventDataLines = [];
 
-              switch (eventType) {
-                case "stream.start":
-                  console.log("🟢 串流已開始");
-                  break;
+        eventBlock.split("\n").forEach(line => {
+          if (line.startsWith("event:")) {
+            eventType = line.substring(6).trim();
+          } else if (line.startsWith("data:")) {
+            eventDataLines.push(line.substring(5).trim());
+          }
+        });
 
-                case "stream.llm_tokens.start":
-                  break;
+        const eventData = eventDataLines.join("\n");
 
-                case "stream.llm_tokens.delta":
-                  if (data.llm_tokens) {
-                    currentAssistantMessage.value += data.llm_tokens;
-                    finalAssistantReply += data.llm_tokens;
-                    scrollToBottom();
-                  }
-                  break;
-
-                case "stream.llm_tokens.completed":
-                  break;
-
-                case "stream.tool_call.start":
-                  appendMessage("tool", ` ${data.tool_name} 啟動`);
-                  break;
-
-                case "stream.tool_call.delta":
-                  break;
-
-                case "stream.tool_call.completed":
-                  appendMessage("tool", ` ${data.tool_name} 完成: ${JSON.stringify(data.tool_output)}`);
-                  break;
-
-                case "stream.completed":
-                  console.log("🏁 Agent 串流邏輯已完成");
-                  break;
-
-                case "stream.error":
-                  console.error("串流錯誤事件:", data.error);
-                  appendMessage("assistant", ` 錯誤：${data.error}`);
-                  break;
-
-                default:
-                  console.warn("⚠️ 未處理事件類型：", eventType, data);
-                  break;
+        if (eventData) {
+          try {
+            const jsonData = JSON.parse(eventData);
+            processStreamEvent(eventType, jsonData, (delta) => {
+              if (isThinking.value && !currentAssistantMessage.value && delta) {
+                clearInterval(thinkingInterval);
               }
-            } catch (err) {
-              console.error("❌ JSON 解析錯誤於 data:", eventData, "錯誤:", err);
-              appendMessage("assistant", `❌ 解析錯誤: ${err.message}`);
-            }
-
-            eventType = null;
-            eventData = "";
+              currentAssistantMessage.value += delta;
+              accumulatedAssistantReply += delta;
+              scrollToBottom();
+            });
+          } catch (err) {
+            console.error("❌ JSON 解析錯誤於 data:", eventData, "錯誤:", err, "事件類型:", eventType);
           }
         }
+        boundary = buffer.indexOf("\n\n");
       }
     }
 
-    if (finalAssistantReply) {
-      appendMessage('assistant', finalAssistantReply);
-    } else if (currentAssistantMessage.value === '') {
-      appendMessage('assistant', '(無回應內容)');
+    if (accumulatedAssistantReply.trim()) {
+      appendMessage('assistant', accumulatedAssistantReply);
+    } else if (!messages.value.some(m => m.role === 'assistant' && m.content.trim() !== '')) {
+      appendMessage('assistant', '(AI 沒有提供回應)');
     }
 
   } catch (err) {
-    console.error("串流 Agent 錯誤:", err);
-    appendMessage('assistant', `❌ 串流錯誤: ${err.message}`);
+    console.error("串流 Agent 請求錯誤:", err);
+    appendMessage('assistant', `❌ 串流處理時發生錯誤: ${err.message}`);
   } finally {
-    currentAssistantMessage.value = null;
     isThinking.value = false;
-    scrollToBottom();
+    clearInterval(thinkingInterval);
+    currentAssistantMessage.value = null;
   }
 }
+
+function processStreamEvent(eventType, data, onDelta) {
+  switch (eventType) {
+    case "stream.tool_call.start": {
+      const content = `🔧 工具 '${data.tool_name}' 執行中...\n`;
+      const msg = { role: "tool", content };
+      messages.value.push(msg);
+      toolMessageMap.set(data.tool_name, messages.value.length - 1);
+      scrollToBottom();
+      break;
+    }
+
+    case "stream.tool_call.delta": {
+      const idx = toolMessageMap.get(data.tool_name);
+      if (typeof idx === "number" && data.tool_tokens) {
+        messages.value[idx].content += data.tool_tokens;
+        scrollToBottom();
+      }
+      break;
+    }
+
+    case "stream.tool_call.completed": {
+      const idx = toolMessageMap.get(data.tool_name);
+      if (typeof idx === "number") {
+        // 用分隔線表示結束
+        messages.value[idx].content += `\n🔧 工具 '${data.tool_name}' 執行完成`;
+      } else {
+        appendMessage("tool", `🔧 工具 '${data.tool_name}' 完成。\n\n輸出: ${data.tool_tokens || '(無)'}`);
+      }
+      scrollToBottom();
+      break;
+    }
+
+    case "stream.llm_tokens.delta":
+      if (data.llm_tokens) onDelta(data.llm_tokens);
+      break;
+
+    case "stream.completed":
+      console.log("🏁 Agent 串流完成", data);
+      break;
+
+    case "stream.error":
+      appendMessage("assistant", `❌ 串流錯誤：${data.error}`);
+      break;
+  }
+}
+
+
 
 onMounted(() => {
   checkHealth();
-  healthCheckInterval.value = setInterval(checkHealth, 15000);
+  healthCheckInterval.value = setInterval(checkHealth, 30000);
+  autoGrowTextarea();
 });
 
 onUnmounted(() => {
-  if (healthCheckInterval.value) {
-    clearInterval(healthCheckInterval.value);
-  }
+  if (healthCheckInterval.value) clearInterval(healthCheckInterval.value);
+  clearInterval(thinkingInterval);
 });
-
 </script>
 
 <style scoped>
-#input-container {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  z-index: 10;
-  background-color: #ADD8E6;
-  /* 淺藍色背景 */
-  padding: 15px;
-  border-radius: 8px;
-  font-family: sans-serif;
-  max-height: 90vh;
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Noto+Sans+TC:wght@400;500;700&display=swap');
+
+:root {
+  --gemini-primary-text: #1f1f1f;
+  --gemini-secondary-text: #5f6368;
+  --gemini-background: #ffffff;
+  --gemini-user-message-bg: #e8f0fe;
+  --gemini-ai-message-bg: #f8f9fa;
+  --gemini-border-color: #dadce0;
+  --gemini-input-bg: #f1f3f4;
+  --gemini-button-bg: #1a73e8;
+  --gemini-button-text: #ffffff;
+
+  --gemini-font-family: 'Roboto', 'Noto Sans TC', sans-serif;
+}
+
+#gemini-chat-container {
   display: flex;
   flex-direction: column;
-  width: 350px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  height: 100%;
+  width: 100%;
+  background-color: var(--gemini-background);
+  font-family: var(--gemini-font-family);
+  color: var(--gemini-primary-text);
+  overflow: hidden;
+  box-shadow: 0 1px 2px 0 rgba(60, 64, 67, 0.3), 0 2px 6px 2px rgba(60, 64, 67, 0.15);
+  border-radius: 8px;
 }
 
-/* 狀態和模式所在行的 div 樣式 */
-#input-container>div:nth-child(1),
-#input-container>div:nth-child(2) {
-  color: #000000 !important;
-  /* 強制黑色文字 */
+.chat-header {
   display: flex;
-  /* 使用 Flexbox 佈局 */
+  justify-content: space-between;
   align-items: center;
-  /* 垂直居中對齊 */
-  margin-bottom: 10px;
-  /* 底部外邊距 (從通用規則移到這裡更精確) */
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--gemini-border-color);
+  background-color: var(--gemini-background);
+  flex-shrink: 0;
 }
 
-/* 模式文字 span 樣式 */
-#input-container>div:nth-child(2)>span {
-  color: #000000 !important;
-  /* 強制黑色文字 */
-  opacity: 1 !important;
-  /* 強制不透明 */
-  margin-left: 5px;
-  /* 與「模式：」標籤間距 */
+.header-title {
+  font-size: 1.1em;
+  font-weight: 500;
+  color: #3c4043;
 }
 
-/* 切換模式按鈕樣式 */
-#input-container>div:nth-child(2)>button {
-  padding: 8px 12px;
-  border: none;
-  background-color: #007bff;
-  color: white;
-  border-radius: 4px;
+.status-indicators {
+  display: flex;
+  align-items: center;
+}
+
+.mode-indicator {
+  font-size: 0.85em;
+  color: var(--gemini-secondary-text);
+  background-color: #e8eaed;
+  padding: 4px 8px;
+  border-radius: 12px;
   cursor: pointer;
-  margin-left: auto;
-  /* 自動左外邊距，使其靠右 */
+  transition: background-color 0.2s;
 }
 
-/* 針對 :hover 和 :disabled 的樣式可以加在這裡或通用按鈕處 */
-#input-container>div:nth-child(2)>button:disabled {
-  background-color: #cccccc;
-  cursor: not-allowed;
+.mode-indicator:hover {
+  background-color: #dadce0;
 }
 
-#input-container>div:nth-child(2)>button:hover:not(:disabled) {
-  background-color: #0056b3;
-}
-
-
-/* 輸入框樣式 */
-#input-container input[type="text"] {
-  padding: 8px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  flex-grow: 1;
-  /* 在 flex 容器中佔用剩餘空間 (如果父層是 flex column，這可能意義不大，但保留也無妨) */
-  margin-bottom: 10px;
-  /* 底部外邊距 */
-}
-
-/* 送出按鈕樣式 (通用按鈕樣式，移除特定佈局的 margin) */
-#input-container>button {
-  /* 選擇 #input-container 的直接子按鈕 (送出按鈕) */
-  padding: 8px 12px;
-  border: none;
-  background-color: #007bff;
-  color: white;
-  border-radius: 4px;
-  cursor: pointer;
-  /* margin-left: 5px; */
-  /* 移除通用的 margin-left */
-  margin-bottom: 10px;
-  /* 底部外邊距 */
-}
-
-/* 送出按鈕禁用樣式 */
-#input-container>button:disabled {
-  background-color: #cccccc;
-  cursor: not-allowed;
-}
-
-/* 送出按鈕滑鼠懸停樣式 */
-#input-container>button:hover:not(:disabled) {
-  background-color: #0056b3;
-}
-
-/* 聊天框樣式 */
 #chatBox {
-  margin-top: 10px;
-  padding: 10px;
-  height: 400px;
-  overflow-y: auto;
-  background-color: #f9f9f9;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  white-space: pre-wrap;
-  word-wrap: break-word;
   flex-grow: 1;
+  overflow-y: auto;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--gemini-border-color) transparent;
 }
 
-/* 每條訊息容器樣式 */
-.message {
-  margin-bottom: 12px;
-  line-height: 1.4;
+#chatBox::-webkit-scrollbar {
+  width: 6px;
 }
 
-/* 使用者角色名稱樣式 */
-.user {
-  color: #004080;
-  /* 深藍 */
-  font-weight: bold;
+#chatBox::-webkit-scrollbar-thumb {
+  background-color: var(--gemini-border-color);
+  border-radius: 3px;
 }
 
-/* Agent 角色名稱樣式 */
-.assistant {
-  color: #155724;
-  /* 深綠 */
-  font-weight: bold;
+.message-row {
+  display: flex;
+  max-width: 85%;
 }
 
-/* 工具角色名稱樣式 */
-.tool {
-  color: #49128C;
-  /* 深紫 */
-  font-weight: bold;
-  font-style: italic;
+.message-row-user {
+  justify-content: flex-end;
+  margin-left: auto;
 }
 
-/* 訊息內容文字樣式 */
-.content {
-  margin-left: 8px;
+.message-row-assistant,
+.message-row-tool {
+  justify-content: flex-start;
+  margin-right: auto;
+}
+
+.message-bubble {
+  padding: 10px 14px;
+  border-radius: 18px;
+  line-height: 1.5;
+  display: flex;
+  word-break: break-word;
+}
+
+.message-bubble-user {
+  background-color: var(--gemini-user-message-bg);
+  color: #17a69f;
+  border-bottom-right-radius: 6px;
+}
+
+.message-bubble-assistant {
+  background-color: var(--gemini-ai-message-bg);
+  color: var(--gemini-primary-text);
+  border: 1px solid var(--gemini-border-color);
+  border-bottom-left-radius: 6px;
+}
+
+.message-bubble-tool {
+  background-color: #fef7e0;
+  color: #754c00;
+  border: 1px solid #fce8b2;
+  font-size: 0.9em;
+}
+
+.tool-output-indicator {
+  font-weight: 500;
+  font-size: 0.8em;
+  color: #b08800;
+  margin-top: 4px;
+  border-top: 1px dashed #fce8b2;
+  padding-top: 4px;
+}
+
+
+
+.message-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.role-name {
+  font-weight: 500;
+  font-size: 0.9em;
+  margin-bottom: 4px;
+  color: var(--gemini-secondary-text);
+}
+
+.text-content {
+  font-size: 1em;
+  white-space: pre-wrap;
+}
+
+.text-content>>>br {
+  display: block;
+  content: "";
+  margin-top: 0.5em;
+}
+
+.text-content .dot {
   display: inline-block;
-  color: #333333;
-  /* 深灰色 */
+  width: 6px;
+  height: 6px;
+  background-color: var(--gemini-secondary-text);
+  border-radius: 50%;
+  margin: 0 2px;
+}
+
+.text-content .dot.animate {
+  animation: blink 1.4s infinite both;
+}
+
+.text-content .dot.animate:nth-child(2) {
+  animation-delay: .2s;
+}
+
+.text-content .dot.animate:nth-child(3) {
+  animation-delay: .4s;
+}
+
+.text-content .thinking-placeholder-dot {
+  opacity: 0.5;
+}
+
+@keyframes blink {
+
+  0%,
+  80%,
+  100% {
+    opacity: 0;
+  }
+
+  40% {
+    opacity: 1;
+  }
+}
+
+.input-area-container {
+  padding: 16px 20px;
+  border-top: 1px solid var(--gemini-border-color);
+  background-color: var(--gemini-background);
+  flex-shrink: 0;
+}
+
+.input-wrapper {
+  display: flex;
+  align-items: flex-end;
+  background-color: var(--gemini-input-bg);
+  border-radius: 24px;
+  padding: 6px 8px 6px 16px;
+  border: 1px solid transparent;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.input-wrapper:focus-within {
+  border-color: #9aa0a6;
+  box-shadow: 0 0 0 1px #9aa0a6;
+}
+
+.user-input {
+  flex-grow: 1;
+  border: none;
+  outline: none;
+  padding: 8px 0;
+  background-color: transparent;
+  color: var(--gemini-primary-text);
+  font-family: var(--gemini-font-family);
+  font-size: 1em;
+  resize: none;
+  line-height: 1.5;
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+.user-input::placeholder {
+  color: var(--gemini-secondary-text);
+  opacity: 0.8;
+}
+
+.send-button {
+  background-color: transparent;
+  border: none;
+  color: var(--gemini-secondary-text);
+  padding: 8px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 8px;
+  transition: background-color 0.2s, color 0.2s;
+  width: 40px;
+  height: 40px;
+}
+
+.send-button:hover:not(:disabled) {
+  background-color: #e0e0e0;
+  color: var(--gemini-button-bg);
+}
+
+.send-button:disabled {
+  color: #bdc1c6;
+  cursor: not-allowed;
+}
+
+.send-button:not(:disabled) {
+  color: var(--gemini-button-bg);
+}
+
+.send-button svg {
+  width: 22px;
+  height: 22px;
+}
+
+.disclaimer {
+  font-size: 0.75em;
+  color: var(--gemini-secondary-text);
+  text-align: center;
+  margin-top: 12px;
+  padding: 0 10px;
 }
 </style>
