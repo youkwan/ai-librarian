@@ -1,56 +1,49 @@
 <script setup lang="ts">
+import { ref } from 'vue';
 import ChatAgent from './components/ChatAgent.vue';
-import Live2D from './components/live2D.vue'; // 保持大寫開頭以符合組件命名慣例
+import Live2D from './components/live2D.vue';
+
+// 定義當前 Live2D 模型的狀態，預設為 'Hiyori'
+const currentLive2DModel = ref('Hiyori');
 </script>
 
 <template>
     <div id="app-container">
-        <Live2D class="live2d-panel"></Live2D>
-        <ChatAgent class="chat-panel"></ChatAgent>
+        <!-- 將 currentLive2DModel 作為 prop 傳遞給 Live2D -->
+        <Live2D class="live2d-panel" :model-name="currentLive2DModel">
+        </Live2D>
+
+        <!-- 傳遞 prop 並監聽來自 ChatAgent 的更新事件 -->
+        <ChatAgent class="chat-panel" :current-live2D-model="currentLive2DModel"
+            @update:live2d-model="newModel => currentLive2DModel = newModel">
+        </ChatAgent>
     </div>
 </template>
 
 <style scoped>
 #app-container {
     display: flex;
-    /* 使用 Flexbox 佈局 */
     width: 100vw;
-    /* 佔滿整個視窗寬度 */
     height: 100vh;
-    /* 佔滿整個視窗高度 */
     overflow: hidden;
-    /* 防止內容溢出導致滾動條 */
     background-color: #2c3e50;
-    /* 深色背景，類似圖片中的效果 */
 }
 
 .live2d-panel {
-    flex: 1;
-    /* Live2D 佔據可用空間的一份 */
-    /* 您可以調整 flex-basis 或 width 來更精確控制寬度，例如 flex: 0 0 60%; */
+    flex-shrink: 0;
+    width: 60vw;
     display: flex;
-    /* 內部也使用 flex 以便於對齊 canvas */
-    justify-content: center;
+    /* 將內容靠左對齊 */
+    justify-content: flex-start;
     align-items: center;
     position: relative;
-    /* 確保 canvas 的 absolute 定位是相對於此容器 */
-    /* background-color: #1e272e; */
-    /* 左側面板的背景色 (可選) */
 }
 
 .chat-panel {
-    flex: 1;
-    /* 聊天界面佔據可用空間的一份 */
-    /* 您可以調整 flex-basis 或 width 來更精確控制寬度，例如 flex: 0 0 40%; */
+    flex-grow: 1;
     display: flex;
-    /* 確保 ChatAgent 組件能正確填充 */
     flex-direction: column;
-    /* ChatAgent 內部是垂直排列的 */
-    /* background-color: #34495e; */
-    /* 右側面板的背景色 (可選) */
     padding: 20px;
-    /* 給聊天面板一些內邊距 */
     box-sizing: border-box;
-    /* 內邊距和邊框不會增加元素的總寬度和高度 */
 }
 </style>

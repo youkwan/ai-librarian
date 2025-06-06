@@ -1,14 +1,35 @@
 <template>
   <div id="gemini-chat-container">
     <div class="chat-header">
-      <div class="header-title">AI 助理</div>
+      <div class="header-title"></div>
       <div class="status-indicators">
-        <span :style="{ color: healthColor, marginRight: '10px', fontSize: '0.85em' }">
-          {{ healthStatusText }}
+        <span class="health-light-indicator" :title="healthStatusTooltipText">
+          <span class="status-dot" :style="{ backgroundColor: healthLightColorComputed }"></span>
         </span>
-        <span class="mode-indicator" @click="toggleAgentMode" :title="`點擊切換到 ${useStreamAgent ? '呼叫模式' : '串流模式'}`">
-          {{ agentStatusTextShort }}
-        </span>
+
+        <div class="settings-menu-container" ref="settingsMenuContainerRef">
+          <button @click="toggleSettingsMenu" class="settings-button" title="設定">
+            <svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 0 24 24" width="20px" fill="currentColor">
+              <path d="M0 0h24v24H0V0z" fill="none" />
+              <path
+                d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" />
+            </svg>
+          </button>
+          <div v-if="isSettingsMenuOpen" class="settings-dropdown">
+            <ul>
+              <li @click="handleSwitchMode" :class="{ 'disabled-menu-item': isThinking }">
+                切換模式 (目前: {{ agentStatusTextShort }})
+              </li>
+              <li @click="openSystemPromptModal">自訂系統提示</li>
+              <li @click="openModelSelectionModal" :class="{ 'disabled-menu-item': isThinking }">
+                切換語言模型 (目前: {{ getModelShortName(currentModel) }})
+              </li>
+              <li @click="openLive2DModelModal" :class="{ 'disabled-menu-item': isThinking }">
+                切換角色模型 (目前: {{ currentLive2DModel }})
+              </li>
+            </ul>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -16,10 +37,19 @@
       <div v-for="(msg, index) in messages" :key="index" class="message-row" :class="`message-row-${msg.role}`">
         <div class="message-bubble" :class="`message-bubble-${msg.role}`">
           <div class="message-content">
-            <div v-if="msg.role !== 'user' && msg.role !== 'tool'" class="role-name">{{ getRoleDisplayName(msg.role) }}
-            </div>
-            <div class="text-content" v-html="formatMessageContent(msg.content)"></div>
-            <div v-if="msg.role === 'tool'" class="tool-output-indicator">工具執行結果</div>
+            <div v-if="msg.role === 'assistant'" class="role-name">{{ getRoleDisplayName(msg.role) }}</div>
+            <template v-if="msg.role === 'user' || msg.role === 'assistant'">
+              <div class="text-content" v-html="formatMessageContent(msg.content)"></div>
+            </template>
+            <template v-if="msg.role === 'tool'">
+              <div class="show-thinking-button" @click="msg.isExpanded = !msg.isExpanded"
+                :class="{ 'expanded': msg.isExpanded, 'collapsed': !msg.isExpanded }">
+                顯示思路 <span class="tool-toggle-icon">{{ msg.isExpanded ? '▼' : '▶' }}</span>
+              </div>
+              <div class="text-content tool-details-content" v-if="msg.isExpanded"
+                v-html="formatMessageContent(msg.content)">
+              </div>
+            </template>
           </div>
         </div>
       </div>
@@ -46,11 +76,68 @@
         </button>
       </div>
     </div>
+
+    <div v-if="isSystemPromptModalOpen" class="modal-overlay" @click.self="cancelSystemPromptEdit">
+      <div class="modal-content">
+        <h3>自訂系統提示</h3>
+        <p>修改下方內容以變更 AI 助理的行為、角色或回應風格。留空將使用預設提示。</p>
+        <textarea v-model="editableSystemPrompt" class="system-prompt-textarea" rows="8"
+          placeholder="例如：你是一位樂於助人的圖書館員..."></textarea>
+        <div class="modal-actions">
+          <button @click="cancelSystemPromptEdit" class="modal-button">取消</button>
+          <button @click="saveSystemPrompt" class="modal-button primary">儲存並套用</button>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="isModelSelectionModalOpen" class="modal-overlay" @click.self="cancelModelSelection">
+      <div class="modal-content">
+        <h3>選擇語言模型</h3>
+        <p>選擇一個 AI 助理使用的語言模型。變更將在下次發送訊息時生效。</p>
+        <div class="model-selection-list">
+          <div v-for="modelId in availableModels" :key="modelId" class="model-option">
+            <input type="radio" :id="`model-${modelId}`" :value="modelId" v-model="editableSelectedModel"
+              name="llmModel" />
+            <label :for="`model-${modelId}`" :title="modelId">{{ getModelDisplayName(modelId) }}</label>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button @click="cancelModelSelection" class="modal-button">取消</button>
+          <button @click="saveSelectedModel" class="modal-button primary">儲存並套用</button>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="isLive2DModelModalOpen" class="modal-overlay" @click.self="cancelLive2DModelSelection">
+      <div class="modal-content">
+        <h3>選擇角色模型</h3>
+        <p>選擇一個喜歡的 Live2D 角色模型。變更將會立即生效。</p>
+        <div class="model-selection-list">
+          <div v-for="modelName in availableLive2DModels" :key="modelName" class="model-option">
+            <input type="radio" :id="`live2d-model-${modelName}`" :value="modelName" v-model="editableLive2DModel"
+              name="live2dModel" />
+            <label :for="`live2d-model-${modelName}`">{{ modelName }}</label>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button @click="cancelLive2DModelSelection" class="modal-button">取消</button>
+          <button @click="saveSelectedLive2DModel" class="modal-button primary">套用</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, onUnmounted, nextTick, computed } from 'vue';
+
+const props = defineProps({
+  currentLive2DModel: {
+    type: String,
+    required: true
+  }
+});
+const emit = defineEmits(['update:live2d-model']);
 
 const healthStatus = ref('Checking...');
 const healthCheckInterval = ref(null);
@@ -66,13 +153,42 @@ const userInputRef = ref(null);
 const thinkingDots = ref('<span class="dot">.</span><span class="dot">.</span><span class="dot">.</span>');
 let thinkingInterval;
 
-// 加入工具訊息追蹤
-const toolMessageMap = new Map(); // key: tool_name, value: index in messages
+const toolMessageMap = new Map();
+const currentTurnToolMessageIndices = ref([]);
 
+const isSettingsMenuOpen = ref(false);
+const settingsMenuContainerRef = ref(null);
+const isSystemPromptModalOpen = ref(false);
+const defaultSystemPrompt = "You are a helpful, creative, and friendly AI assistant, in the style of Gemini.";
+const currentSystemPrompt = ref(defaultSystemPrompt);
+const editableSystemPrompt = ref("");
 
+const defaultModel = "openai:gpt-4o-mini";
+const currentModel = ref(defaultModel);
+const editableSelectedModel = ref(defaultModel);
+const isModelSelectionModalOpen = ref(false);
+const availableModels = ref([
+  "openai:gpt-4o-mini", "openai:gpt-4o", "openai:gpt-4.5-preview", "openai:o1-mini", "openai:o1",
+  "anthropic:claude-3-7-sonnet-latest", "anthropic:claude-3-5-haiku-latest", "anthropic:claude-3-5-sonnet-latest", "anthropic:claude-3-5-sonnet-20240620",
+  "google_genai:gemini-2.5-pro-exp-03-25", "google_genai:gemini-2.0-flash", "google_genai:gemini-2.0-flash-lite", "google_genai:gemini-1.5-flash", "google_genai:gemini-1.5-flash-80", "google_genai:gemini-1.5-pro",
+  "groq:meta-llama/Llama-4-scout-170-i6e-instruct", "groq:llama-3.1-70b-versatile", "groq:llama-3.1-70b-specdec", "groq:llama-3.1-1b-preview", "groq:llama-3.1-3b-preview", "groq:llama-3.1-8b-instant",
+  "groq:mistral-saba-240", "groq:gwen-qwq-32b", "groq:gwen-2.5-coder-32b", "groq:gwen-2.5-32b"
+]);
 
-// 移除了 onAvatarError，因為不再需要頭像
+const availableLive2DModels = ref(['Haru', 'Hiyori', 'Mao', 'Mark', 'Natori', 'Rice', 'Wanko']);
+const isLive2DModelModalOpen = ref(false);
+const editableLive2DModel = ref('');
 
+const healthLightColorComputed = computed(() => {
+  if (healthStatus.value === 'ok') return '#1e8e3e';
+  if (healthStatus.value === 'error') return '#d93025';
+  return '#aaaaaa';
+});
+const healthStatusTooltipText = computed(() => {
+  if (healthStatus.value === 'ok') return '連線狀態：良好';
+  if (healthStatus.value === 'error') return '連線狀態：異常';
+  return '連線狀態：檢查中...';
+});
 const formatMessageContent = (content) => {
   if (typeof content !== 'string') return '';
   return content
@@ -84,27 +200,36 @@ const formatMessageContent = (content) => {
     .replace(/\n/g, '<br>');
 };
 
-const healthStatusText = computed(() => {
-  if (healthStatus.value === 'ok') return '連線狀態：良好';
-  if (healthStatus.value === 'error') return '連線狀態：異常';
-  return '連線狀態：檢查中';
-});
-
-const healthColor = computed(() => {
-  if (healthStatus.value === 'ok') return '#1e8e3e';
-  if (healthStatus.value === 'error') return '#d93025';
-  return '#70757a';
-});
-
 const agentStatusTextShort = computed(() => (useStreamAgent.value ? '串流' : '呼叫'));
 
+const getModelShortName = (modelId) => {
+  if (!modelId) return 'N/A';
+  if (modelId.includes(':')) {
+    const parts = modelId.split(':');
+    if (parts[1]) {
+      const subParts = parts[1].split('/');
+      return subParts[subParts.length - 1];
+    }
+    return parts[0];
+  }
+  return modelId;
+};
+
+const getModelDisplayName = (modelId) => {
+  if (!modelId) return '未知模型';
+  let name = modelId;
+  if (modelId.startsWith("openai:")) name = "OpenAI " + modelId.substring(7);
+  else if (modelId.startsWith("anthropic:")) name = "Anthropic " + modelId.substring(10);
+  else if (modelId.startsWith("google_genai:")) name = "Google " + modelId.substring(13).replace("-exp-", " Exp ");
+  else if (modelId.startsWith("groq:")) name = "Groq " + modelId.substring(5);
+  return name.replace(/-/g, ' ').replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+};
 async function checkHealth() {
   try {
     const res = await fetch("http://localhost:8000/v1/sys/health");
     if (!res.ok) {
       console.warn(`健康檢查失敗，狀態碼: ${res.status}`);
-      healthStatus.value = 'error';
-      return;
+      healthStatus.value = 'error'; return;
     }
     const data = await res.json();
     healthStatus.value = data.status === "ok" ? 'ok' : 'error';
@@ -123,14 +248,6 @@ function getRoleDisplayName(role) {
   }
 }
 
-function appendMessage(role, content) {
-  if (role === 'assistant' && content.trim() === '' && !currentAssistantMessage.value) {
-    return;
-  }
-  messages.value.push({ role, content });
-  scrollToBottom();
-}
-
 async function scrollToBottom() {
   await nextTick();
   const chatBox = chatBoxRef.value;
@@ -143,6 +260,64 @@ function toggleAgentMode() {
   if (isThinking.value) return;
   useStreamAgent.value = !useStreamAgent.value;
 }
+
+const toggleSettingsMenu = () => {
+  isSettingsMenuOpen.value = !isSettingsMenuOpen.value;
+};
+
+const handleSwitchMode = () => {
+  toggleAgentMode();
+  isSettingsMenuOpen.value = false;
+};
+
+const handleClickOutsideSettingsMenu = (event) => {
+  if (isSettingsMenuOpen.value && settingsMenuContainerRef.value && !settingsMenuContainerRef.value.contains(event.target)) {
+    isSettingsMenuOpen.value = false;
+  }
+};
+
+const openSystemPromptModal = () => {
+  editableSystemPrompt.value = currentSystemPrompt.value === defaultSystemPrompt ? "" : currentSystemPrompt.value;
+  isSettingsMenuOpen.value = false;
+  isSystemPromptModalOpen.value = true;
+};
+
+const saveSystemPrompt = () => {
+  currentSystemPrompt.value = editableSystemPrompt.value.trim() || defaultSystemPrompt;
+  isSystemPromptModalOpen.value = false;
+};
+const cancelSystemPromptEdit = () => {
+  isSystemPromptModalOpen.value = false;
+};
+const openModelSelectionModal = () => {
+  if (isThinking.value) return;
+  editableSelectedModel.value = currentModel.value;
+  isSettingsMenuOpen.value = false;
+  isModelSelectionModalOpen.value = true;
+};
+const saveSelectedModel = () => {
+  currentModel.value = editableSelectedModel.value;
+  isModelSelectionModalOpen.value = false;
+};
+const cancelModelSelection = () => {
+  isModelSelectionModalOpen.value = false;
+};
+
+const openLive2DModelModal = () => {
+  if (isThinking.value) return;
+  editableLive2DModel.value = props.currentLive2DModel;
+  isSettingsMenuOpen.value = false;
+  isLive2DModelModalOpen.value = true;
+};
+
+const saveSelectedLive2DModel = () => {
+  emit('update:live2d-model', editableLive2DModel.value);
+  isLive2DModelModalOpen.value = false;
+};
+
+const cancelLive2DModelSelection = () => {
+  isLive2DModelModalOpen.value = false;
+};
 
 const autoGrowTextarea = () => {
   const textarea = userInputRef.value;
@@ -162,46 +337,35 @@ const handleEnterKey = (event) => {
 async function sendMessage() {
   const text = userInput.value.trim();
   if (!text || isThinking.value) return;
-
   if (!threadId.value) {
     threadId.value = `thread-${self.crypto.randomUUID()}`;
   }
 
-  appendMessage('user', text);
+  messages.value.push({ role: 'user', content: text });
   userInput.value = '';
-  if (userInputRef.value) {
-    userInputRef.value.style.height = 'auto';
-  }
+  if (userInputRef.value) userInputRef.value.style.height = 'auto';
+
   isThinking.value = true;
+  currentTurnToolMessageIndices.value = [];
   currentAssistantMessage.value = '';
 
   let dotCount = 0;
   clearInterval(thinkingInterval);
   thinkingInterval = setInterval(() => {
     dotCount = (dotCount + 1) % 4;
-    let dots = '';
-    for (let i = 0; i < dotCount; i++) {
-      dots += '<span class="dot animate">.</span>';
-    }
+    let dots = Array(dotCount).fill('<span class="dot animate">.</span>').join('');
     if (!currentAssistantMessage.value) {
       thinkingDots.value = dots || '<span class="dot thinking-placeholder-dot">.</span>';
     }
   }, 500);
-
   const payload = {
     thread_id: threadId.value,
     messages: [
-      { role: "system", content: "You are a helpful, creative, and friendly AI assistant, in the style of Gemini." },
+      { role: "system", content: currentSystemPrompt.value },
       ...messages.value.filter(m => m.role === 'user' || m.role === 'assistant').slice(-10),
-      { role: "user", content: text }
     ],
-    llm_config: {
-      model: "openai:gpt-4o-mini",
-      temperature: 0.7,
-      max_tokens: 2000,
-    }
+    llm_config: { model: currentModel.value, temperature: 0.7, max_tokens: 2000 }
   };
-
   try {
     if (useStreamAgent.value) {
       await streamAgentRequest(payload);
@@ -210,71 +374,65 @@ async function sendMessage() {
     }
   } catch (error) {
     console.error("發送訊息時捕獲到未處理的錯誤:", error);
-    appendMessage('assistant', `❌ 糟糕，似乎發生了一些問題：${error.message}`);
+    messages.value.push({ role: 'assistant', content: `❌ 糟糕，似乎發生了一些問題：${error.message}` });
   } finally {
     isThinking.value = false;
     clearInterval(thinkingInterval);
     thinkingDots.value = '';
+    currentAssistantMessage.value = null;
+    currentTurnToolMessageIndices.value.forEach(index => {
+      if (messages.value[index] && messages.value[index].role === 'tool') {
+        messages.value[index].isExpanded = false;
+      }
+    });
+    currentTurnToolMessageIndices.value = [];
+
     scrollToBottom();
   }
 }
 
 async function invokeAgentRequest(payload) {
-  currentAssistantMessage.value = null;
   try {
     const res = await fetch("http://localhost:8000/v1/agents/invoke", {
       method: "POST",
       headers: { "Content-Type": "application/json", "Accept": "application/json" },
       body: JSON.stringify(payload)
     });
-
     if (!res.ok) {
       const errorText = await res.text();
       throw new Error(`伺服器錯誤 ${res.status}: ${errorText || res.statusText}`);
     }
-
     const data = await res.json();
-    const assistantMessages = data.messages?.filter(msg => msg.role === "assistant" && msg.content);
-    if (assistantMessages && assistantMessages.length > 0) {
-      assistantMessages.forEach(msg => appendMessage('assistant', msg.content));
+    const assistantMsgs = data.messages?.filter(msg => msg.role === "assistant" && msg.content);
+    if (assistantMsgs && assistantMsgs.length > 0) {
+      assistantMsgs.forEach(msg => messages.value.push({ role: 'assistant', content: msg.content }));
     } else {
-      appendMessage('assistant', '(AI 沒有提供回應)');
+      messages.value.push({ role: 'assistant', content: '(AI 沒有提供回應)' });
     }
-
     if (Array.isArray(data.tools_used)) {
       data.tools_used.forEach(tool => {
         if (tool.name) {
-          appendMessage('tool', `工具 '${tool.name}' 已執行。輸出: ${JSON.stringify(tool.tool_output) || '(無輸出)'}`);
+          const toolContent = `工具 '${tool.name}' 已執行。\n輸出: ${JSON.stringify(tool.tool_output, null, 2) || '(無輸出)'}`;
+          messages.value.push({ role: 'tool', content: toolContent, isExpanded: false });
         }
       });
     }
   } catch (err) {
     console.error("呼叫 (Invoke) Agent 時出錯:", err);
-    appendMessage('assistant', `❌ 呼叫 AI 時發生錯誤： ${err.message}`);
-  } finally {
-    isThinking.value = false;
-    clearInterval(thinkingInterval);
-    currentAssistantMessage.value = null;
+    messages.value.push({ role: 'assistant', content: `❌ 呼叫 AI 時發生錯誤： ${err.message}` });
   }
 }
 
 async function streamAgentRequest(payload) {
   let accumulatedAssistantReply = "";
-
   try {
     const response = await fetch("http://localhost:8000/v1/agents/stream", {
       method: "POST",
       headers: { "Content-Type": "application/json", "Accept": "text/event-stream" },
       body: JSON.stringify(payload)
     });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`伺服器錯誤 ${response.status}: ${errorText || response.statusText}`);
-    }
-    if (!response.body) {
-      throw new Error("回應 body 為空，無法讀取串流。");
-    }
+    if (!response.ok) { const errorText = await response.text(); throw new Error(`伺服器錯誤 ${response.status}: ${errorText || response.statusText}`); }
+    if (!response.body) { throw new Error("回應 body 為空，無法讀取串流。"); }
 
     const reader = response.body.getReader();
     const decoder = new TextDecoder("utf-8");
@@ -283,34 +441,28 @@ async function streamAgentRequest(payload) {
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
-
       buffer += decoder.decode(value, { stream: true });
       let boundary = buffer.indexOf("\n\n");
       while (boundary !== -1) {
         const eventBlock = buffer.substring(0, boundary);
         buffer = buffer.substring(boundary + 2);
-
         let eventType = "message";
         let eventDataLines = [];
-
         eventBlock.split("\n").forEach(line => {
-          if (line.startsWith("event:")) {
-            eventType = line.substring(6).trim();
-          } else if (line.startsWith("data:")) {
-            eventDataLines.push(line.substring(5).trim());
-          }
+          if (line.startsWith("event:")) eventType = line.substring(6).trim();
+          else if (line.startsWith("data:")) eventDataLines.push(line.substring(5).trim());
         });
-
         const eventData = eventDataLines.join("\n");
-
         if (eventData) {
           try {
             const jsonData = JSON.parse(eventData);
             processStreamEvent(eventType, jsonData, (delta) => {
-              if (isThinking.value && !currentAssistantMessage.value && delta) {
+              if (currentAssistantMessage.value === '' && delta.trim() !== '') {
                 clearInterval(thinkingInterval);
+                thinkingDots.value = '';
               }
               currentAssistantMessage.value += delta;
+
               accumulatedAssistantReply += delta;
               scrollToBottom();
             });
@@ -321,80 +473,80 @@ async function streamAgentRequest(payload) {
         boundary = buffer.indexOf("\n\n");
       }
     }
-
     if (accumulatedAssistantReply.trim()) {
-      appendMessage('assistant', accumulatedAssistantReply);
-    } else if (!messages.value.some(m => m.role === 'assistant' && m.content.trim() !== '')) {
-      appendMessage('assistant', '(AI 沒有提供回應)');
+      messages.value.push({ role: 'assistant', content: accumulatedAssistantReply });
+    } else if (!messages.value.some(m => m.role === 'assistant' && m.content?.trim()) && toolMessageMap.size === 0) {
+      messages.value.push({ role: 'assistant', content: '(AI 沒有提供回應)' });
     }
-
   } catch (err) {
     console.error("串流 Agent 請求錯誤:", err);
-    appendMessage('assistant', `❌ 串流處理時發生錯誤: ${err.message}`);
+    messages.value.push({ role: 'assistant', content: `❌ 串流處理時發生錯誤: ${err.message}` });
   } finally {
-    isThinking.value = false;
-    clearInterval(thinkingInterval);
-    currentAssistantMessage.value = null;
+    toolMessageMap.clear();
   }
 }
 
 function processStreamEvent(eventType, data, onDelta) {
+  const toolId = data.tool_call_id || data.tool_name;
   switch (eventType) {
     case "stream.tool_call.start": {
-      const content = `🔧 工具 '${data.tool_name}' 執行中...\n`;
-      const msg = { role: "tool", content };
-      messages.value.push(msg);
-      toolMessageMap.set(data.tool_name, messages.value.length - 1);
+      const startContent = `🔧 工具 '${data.tool_name}' 執行中...\n`;
+      const newToolMsg = { role: "tool", content: startContent, isExpanded: true };
+      messages.value.push(newToolMsg);
+      const newMsgIndex = messages.value.length - 1;
+      toolMessageMap.set(toolId, newMsgIndex);
+      if (isThinking.value) {
+        currentTurnToolMessageIndices.value.push(newMsgIndex);
+      }
       scrollToBottom();
       break;
     }
-
     case "stream.tool_call.delta": {
-      const idx = toolMessageMap.get(data.tool_name);
-      if (typeof idx === "number" && data.tool_tokens) {
-        messages.value[idx].content += data.tool_tokens;
+      const deltaIdx = toolMessageMap.get(toolId);
+      if (typeof deltaIdx === "number" && messages.value[deltaIdx] && data.tool_tokens) {
+        messages.value[deltaIdx].content += data.tool_tokens;
         scrollToBottom();
       }
       break;
     }
-
     case "stream.tool_call.completed": {
-      const idx = toolMessageMap.get(data.tool_name);
-      if (typeof idx === "number") {
-        // 用分隔線表示結束
-        messages.value[idx].content += `\n🔧 工具 '${data.tool_name}' 執行完成`;
+      const completedIdx = toolMessageMap.get(toolId);
+      if (typeof completedIdx === "number" && messages.value[completedIdx]) {
+        messages.value[completedIdx].content += `\n🔧 工具 '${data.tool_name}' 執行完成`;
+        if (data.tool_output) {
+          messages.value[completedIdx].content += `\n輸出: ${JSON.stringify(data.tool_output, null, 2)}`;
+        }
       } else {
-        appendMessage("tool", `🔧 工具 '${data.tool_name}' 完成。\n\n輸出: ${data.tool_tokens || '(無)'}`);
+        const completeContent = `🔧 工具 '${data.tool_name}' 完成 (獨立事件)。\n\n輸出: ${JSON.stringify(data.tool_output, null, 2) ||
+          '(無)'}`;
+        messages.value.push({ role: "tool", content: completeContent, isExpanded: false });
       }
       scrollToBottom();
       break;
     }
-
     case "stream.llm_tokens.delta":
       if (data.llm_tokens) onDelta(data.llm_tokens);
       break;
-
     case "stream.completed":
       console.log("🏁 Agent 串流完成", data);
       break;
-
     case "stream.error":
-      appendMessage("assistant", `❌ 串流錯誤：${data.error}`);
+      messages.value.push({ role: 'assistant', content: `❌ 串流錯誤：${data.error}` });
+      scrollToBottom();
       break;
   }
 }
-
-
 
 onMounted(() => {
   checkHealth();
   healthCheckInterval.value = setInterval(checkHealth, 30000);
   autoGrowTextarea();
+  document.addEventListener('click', handleClickOutsideSettingsMenu);
 });
-
 onUnmounted(() => {
   if (healthCheckInterval.value) clearInterval(healthCheckInterval.value);
   clearInterval(thinkingInterval);
+  document.removeEventListener('click', handleClickOutsideSettingsMenu);
 });
 </script>
 
@@ -406,12 +558,16 @@ onUnmounted(() => {
   --gemini-secondary-text: #5f6368;
   --gemini-background: #ffffff;
   --gemini-user-message-bg: #e8f0fe;
+  --gemini-user-message-text: #1a73e8;
   --gemini-ai-message-bg: #f8f9fa;
+  --gemini-assistant-message-text: #3c4043;
+  --gemini-tool-message-bg: #fef7e0;
+  --gemini-tool-text-color: #754c00;
+  --gemini-tool-border-color: #fce8b2;
   --gemini-border-color: #dadce0;
   --gemini-input-bg: #f1f3f4;
   --gemini-button-bg: #1a73e8;
   --gemini-button-text: #ffffff;
-
   --gemini-font-family: 'Roboto', 'Noto Sans TC', sans-serif;
 }
 
@@ -419,7 +575,8 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   height: 100%;
-  width: 100%;
+  max-width: 40vw;
+  min-width: 320px;
   background-color: var(--gemini-background);
   font-family: var(--gemini-font-family);
   color: var(--gemini-primary-text);
@@ -447,20 +604,6 @@ onUnmounted(() => {
 .status-indicators {
   display: flex;
   align-items: center;
-}
-
-.mode-indicator {
-  font-size: 0.85em;
-  color: var(--gemini-secondary-text);
-  background-color: #e8eaed;
-  padding: 4px 8px;
-  border-radius: 12px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.mode-indicator:hover {
-  background-color: #dadce0;
 }
 
 #chatBox {
@@ -504,43 +647,34 @@ onUnmounted(() => {
   border-radius: 18px;
   line-height: 1.5;
   display: flex;
+  flex-direction: column;
   word-break: break-word;
 }
 
 .message-bubble-user {
   background-color: var(--gemini-user-message-bg);
-  color: #17a69f;
+  color: var(--gemini-user-message-text);
   border-bottom-right-radius: 6px;
 }
 
 .message-bubble-assistant {
   background-color: var(--gemini-ai-message-bg);
-  color: var(--gemini-primary-text);
+  color: var(--gemini-assistant-message-text);
   border: 1px solid var(--gemini-border-color);
   border-bottom-left-radius: 6px;
 }
 
 .message-bubble-tool {
-  background-color: #fef7e0;
-  color: #754c00;
-  border: 1px solid #fce8b2;
+  background-color: var(--gemini-tool-message-bg);
+  color: var(--gemini-tool-text-color);
   font-size: 0.9em;
+  border-radius: 12px;
 }
-
-.tool-output-indicator {
-  font-weight: 500;
-  font-size: 0.8em;
-  color: #b08800;
-  margin-top: 4px;
-  border-top: 1px dashed #fce8b2;
-  padding-top: 4px;
-}
-
-
 
 .message-content {
   display: flex;
   flex-direction: column;
+  width: 100%;
 }
 
 .role-name {
@@ -553,6 +687,53 @@ onUnmounted(() => {
 .text-content {
   font-size: 1em;
   white-space: pre-wrap;
+}
+
+.tool-details-content {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--gemini-tool-border-color);
+}
+
+.show-thinking-button {
+  display: inline-block;
+  font-size: 0.85em;
+  font-weight: 500;
+  color: var(--gemini-secondary-text);
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.15s ease, padding 0.15s ease, border-color 0.15s ease, border-radius 0.15s ease;
+  align-self: flex-start;
+  padding: 2px 4px;
+}
+
+.show-thinking-button.expanded {
+  padding: 5px 12px;
+  background-color: rgba(0, 0, 0, 0.03);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 16px;
+}
+
+.show-thinking-button.expanded:hover {
+  background-color: rgba(0, 0, 0, 0.06);
+}
+
+.show-thinking-button.collapsed {
+  background-color: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.show-thinking-button.collapsed:hover {
+  background-color: rgba(0, 0, 0, 0.025);
+}
+
+.tool-toggle-icon {
+  display: inline-block;
+  margin-left: 6px;
+  font-weight: normal;
 }
 
 .text-content>>>br {
@@ -676,11 +857,218 @@ onUnmounted(() => {
   height: 22px;
 }
 
-.disclaimer {
-  font-size: 0.75em;
+.settings-menu-container {
+  position: relative;
+  display: inline-block;
+}
+
+.settings-button {
+  background: transparent;
+  border: none;
+  padding: 6px;
+  margin-left: 8px;
+  cursor: pointer;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   color: var(--gemini-secondary-text);
-  text-align: center;
-  margin-top: 12px;
-  padding: 0 10px;
+  transition: background-color 0.2s;
+}
+
+.settings-button:hover {
+  background-color: #e0e0e0;
+}
+
+.settings-button svg {
+  width: 20px;
+  height: 20px;
+}
+
+.settings-dropdown {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  background-color: #ffffff !important;
+  opacity: 1 !important;
+  border: 1px solid var(--gemini-border-color);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 100;
+  min-width: 220px;
+  overflow: hidden;
+}
+
+.settings-dropdown ul {
+  list-style: none;
+  padding: 8px 0;
+  margin: 0;
+}
+
+.settings-dropdown li {
+  padding: 10px 16px;
+  cursor: pointer;
+  font-size: 0.9em;
+  color: #000000 !important;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.settings-dropdown li:hover {
+  background-color: var(--gemini-input-bg);
+}
+
+.settings-dropdown li.disabled-menu-item {
+  color: #aaa !important;
+  cursor: not-allowed;
+  font-weight: normal;
+}
+
+.settings-dropdown li.disabled-menu-item:hover {
+  background-color: transparent;
+}
+
+.health-light-indicator {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 10px;
+  height: 20px;
+}
+
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+  transition: background-color 0.3s ease;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: var(--gemini-background);
+  padding: 25px 30px;
+  border-radius: 12px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  width: 90%;
+  max-width: 550px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.modal-content h3 {
+  margin-top: 0;
+  margin-bottom: 5px;
+  color: var(--gemini-primary-text);
+  font-size: 1.4em;
+}
+
+.modal-content p {
+  font-size: 0.9em;
+  color: var(--gemini-secondary-text);
+  margin-bottom: 10px;
+  line-height: 1.6;
+}
+
+.system-prompt-textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--gemini-border-color);
+  border-radius: 6px;
+  font-family: var(--gemini-font-family);
+  font-size: 0.95em;
+  resize: vertical;
+  min-height: 100px;
+  box-sizing: border-box;
+}
+
+.system-prompt-textarea:focus {
+  outline: none;
+  border-color: var(--gemini-button-bg);
+  box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.modal-button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 0.9em;
+  transition: background-color 0.2s, box-shadow 0.2s;
+}
+
+.modal-button.primary {
+  background-color: var(--gemini-button-bg);
+  color: var(--gemini-button-text);
+}
+
+.modal-button.primary:hover {
+  background-color: #1558b0;
+}
+
+.modal-button:not(.primary) {
+  background-color: var(--gemini-input-bg);
+  color: var(--gemini-primary-text);
+  border: 1px solid var(--gemini-border-color);
+}
+
+.modal-button:not(.primary):hover {
+  background-color: #e0e0e0;
+}
+
+.model-selection-list {
+  max-height: 300px;
+  overflow-y: auto;
+  padding-right: 10px;
+  margin-top: 10px;
+  margin-bottom: 10px;
+  border: 1px solid var(--gemini-border-color);
+  border-radius: 6px;
+  padding: 10px;
+}
+
+.model-option {
+  display: flex;
+  align-items: center;
+  padding: 8px 5px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.model-option:hover {
+  background-color: var(--gemini-input-bg);
+}
+
+.model-option input[type="radio"] {
+  margin-right: 10px;
+  accent-color: var(--gemini-button-bg);
+}
+
+.model-option label {
+  font-size: 0.95em;
+  color: var(--gemini-primary-text);
+  cursor: pointer;
+  flex-grow: 1;
 }
 </style>
