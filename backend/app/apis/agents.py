@@ -2,8 +2,8 @@ from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import StreamingResponse
 from typing import AsyncGenerator
 
-from app.services.graph import react_agent
-from app.services.tools import TOOLS_INFO
+from app.services.workflows import react_agent
+from app.services.tools.tools import TOOLS_INFO
 from app.models.schemas import (
     AegntRequest,
     AgentResponse,
@@ -20,8 +20,7 @@ agents_router = APIRouter(prefix="/agents", tags=["agents"])
     "/models", summary="list all available models", response_model=ModelResponse
 )
 def get_models() -> ModelResponse:
-    """
-    Retrieves a list of the LLMs currently configured
+    """Retrieves a list of the LLMs currently configured
     and available for use with the agent endpoints (`/invoke` and `/stream`).
     """
     # TODO: check if the model is available
@@ -32,8 +31,7 @@ def get_models() -> ModelResponse:
     "/tools", summary="list all available tools", response_model=ToolResponse
 )
 def get_tools() -> ToolResponse:
-    """
-    Provides a list of tools that the agent can potentially use during its
+    """Provides a list of tools that the agent can potentially use during its
     execution to perform actions or retrieve information.
     """
     return ToolResponse(tools=TOOLS_INFO)
@@ -41,8 +39,7 @@ def get_tools() -> ToolResponse:
 
 @agents_router.post("/invoke", summary="invoke the agent", response_model=AgentResponse)
 async def ainvoke_react_agent(request: AegntRequest) -> AgentResponse:
-    """
-    Processes the request by invoking the agent synchronously and returns the final
+    """Processes the request by invoking the agent synchronously and returns the final
     response once the agent execution is complete. This endpoint is suitable for
     applications where real-time feedback is not required, and only the final result is needed.
 
@@ -162,8 +159,7 @@ async def stream_tokens(request: AegntRequest) -> AsyncGenerator[str, None]:
 
 @agents_router.post("/stream", summary="stream the agent")
 async def stream_react_agent(request: AegntRequest):
-    """
-    Initiates a streaming connection to the agent based on the provided request parameters.
+    """Initiates a streaming connection to the agent based on the provided request parameters.
     This endpoint uses Server-Sent Events (SSE) to push updates from the agent's execution
     process in real-time. It's suitable for applications requiring immediate feedback or
     observing the agent's thought process, including LLM token generation and tool call results.
@@ -192,7 +188,6 @@ async def stream_react_agent(request: AegntRequest):
     Standard OpenAPI documentation interfaces like Swagger UI typically **cannot** directly interact
     with or test SSE endpoints. To consume this stream, you must use a client library or tool
     that supports Server-Sent Events (e.g., `EventSource` in JavaScript, `httpx` in Python, Postman).
-
     """
     return StreamingResponse(
         stream_tokens(request),

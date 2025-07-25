@@ -2,8 +2,9 @@ from pathlib import Path
 from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-# Define the path to the .env file
-BASE_DIR = Path(__file__).resolve().parent.parent.parent
+from app.models.llmconfig import Model
+
+BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
 DOTENV_PATH = BASE_DIR / ".env"
 
 if not DOTENV_PATH.is_file():
@@ -11,7 +12,11 @@ if not DOTENV_PATH.is_file():
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=str(DOTENV_PATH), env_ignore_empty=True)
+    model_config = SettingsConfigDict(
+        env_file=str(DOTENV_PATH),
+        env_ignore_empty=True,
+        extra="ignore",
+    )
 
     # API settings
     debug: bool = False
@@ -20,8 +25,8 @@ class Settings(BaseSettings):
     allowed_origins: list[str] | None = Field(default_factory=list)
 
     # Default llm to use in agent
-    default_llm: str = "gpt-4o-mini"
-    default_temperature: float = 1.0
+    default_llm: Model = Model.GPT_4O_MINI
+    default_temperature: float = Field(default=1.0, ge=0.0, le=2.0)
     default_max_tokens: int | None = None
 
     # LLM API keys
@@ -34,6 +39,27 @@ class Settings(BaseSettings):
     langsmith_tracing: bool = False
     langsmith_project: str | None = None
     langsmith_api_key: str | None = None
+
+    # DuckDuckGo setting
+    max_web_search_results: int = Field(default=5, gt=0)
+
+    # Google Books setting
+    google_books_api_key: str | None = None
+    max_google_books_search_results: int = Field(default=5, gt=0)
+
+    # Arxiv setting
+    top_k_results: int = 3
+    arxiv_max_query_length: int = 300
+    continue_on_failure: bool = False
+    load_max_docs: int = 100
+    load_all_available_meta: bool = False
+    doc_content_chars_max: int = 40000
+
+    # Wikipedia setting
+    wikipedia_lang: str = "en"
+    wikipedia_top_k_results: int = 3
+    wikipedia_load_all_available_meta: bool = False
+    wikipedia_doc_content_chars_max: int = 4000
 
     @model_validator(mode="after")
     def check_at_least_one_llm_api_key(self) -> "Settings":
