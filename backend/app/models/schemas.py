@@ -12,8 +12,7 @@ from app.utils import generate_thread_id
 
 
 class HealthResponse(BaseModel):
-    """
-    Health check response schema. Returns 'ok' status when the API endpoint is operational.
+    """Health check response schema. Returns 'ok' status when the API endpoint is operational.
     Used for monitoring system health and availability.
     """
 
@@ -24,9 +23,7 @@ class HealthResponse(BaseModel):
 
 
 class ModelResponse(BaseModel):
-    """
-    Model response schema. Returns the list of available models.
-    """
+    """Model response schema. Returns the list of available models."""
 
     models: list[Model] = Field(
         ...,
@@ -36,9 +33,7 @@ class ModelResponse(BaseModel):
 
 
 class Tool(BaseModel):
-    """
-    Tool schema. Returns the name and description of a tool.
-    """
+    """Tool schema. Returns the name and description of a tool."""
 
     tool_name: str = Field(
         ..., description="The name of the tool.", examples=["get_temperature"]
@@ -51,9 +46,7 @@ class Tool(BaseModel):
 
 
 class ToolResponse(BaseModel):
-    """
-    Tool response schema. Returns the list of available tools.
-    """
+    """Tool response schema. Returns the list of available tools."""
 
     tools: list[Tool] = Field(
         ...,
@@ -68,8 +61,7 @@ class ToolResponse(BaseModel):
 
 
 class Role(str, Enum):
-    """
-    Enumeration of possible message roles in a conversation.
+    """Enumeration of possible message roles in a conversation.
     Follows the OpenAI chat completion API convention.
     """
 
@@ -79,8 +71,7 @@ class Role(str, Enum):
 
 
 class OpenAIMessage(BaseModel):
-    """
-    OpenAI style message schema following the chat completion API format.
+    """OpenAI style message schema following the chat completion API format.
     Used to structure conversation messages between system, user, and assistant.
     """
 
@@ -97,8 +88,7 @@ class OpenAIMessage(BaseModel):
 
 
 class AegntRequest(BaseModel):
-    """
-    Chat request schema defining the structure of incoming chat API requests.
+    """Chat request schema defining the structure of incoming chat API requests.
     Contains all parameters needed to process a conversation with the Agent.
     """
 
@@ -141,8 +131,7 @@ class AegntRequest(BaseModel):
 
 
 class AgentResponse(BaseModel):
-    """
-    Agent response schema defining the structure of outgoing agent API responses.
+    """Agent response schema defining the structure of outgoing agent API responses.
     Contains the generated message and metadata about the interaction.
     """
 
