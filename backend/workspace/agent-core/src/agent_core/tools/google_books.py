@@ -1,10 +1,5 @@
 import httpx
-from typing import List
 from pydantic import BaseModel
-
-from app.core.settings import settings
-
-GOOGLE_BOOKS_API_URL = "https://www.googleapis.com/books/v1/volumes"
 
 
 class GoogleBooksClient(BaseModel):
@@ -17,8 +12,9 @@ class GoogleBooksClient(BaseModel):
     a source link.
     """
 
-    google_books_api_key: str = settings.google_books_api_key
-    top_k_results: int = settings.max_google_books_search_results
+    google_books_api_key: str
+    top_k_results: int = 10
+    google_books_api_url: str = "https://www.googleapis.com/books/v1/volumes"
 
     async def arun(self, query: str) -> str:
         params = {
@@ -29,7 +25,9 @@ class GoogleBooksClient(BaseModel):
 
         async with httpx.AsyncClient() as client:
             try:
-                response = await client.get(GOOGLE_BOOKS_API_URL, params=params)
+                response = await client.get(
+                    self.google_books_api_url, params=params
+                )
                 response.raise_for_status()
                 json_response = response.json()
             except httpx.RequestError as exc:
@@ -47,11 +45,13 @@ class GoogleBooksClient(BaseModel):
 
         return self._format(query, json_response.get("items", []))
 
-    def _format(self, query: str, books: List) -> str:
+    def _format(self, query: str, books: list) -> str:
         if not books:
             return f"Sorry no books could be found for your query: {query}"
 
-        start = f"Here are {len(books)} suggestions for books related to {query}:"
+        start = (
+            f"Here are {len(books)} suggestions for books related to {query}:"
+        )
 
         results = []
         results.append(start)
@@ -72,7 +72,14 @@ class GoogleBooksClient(BaseModel):
 
         return "\n\n".join(results)
 
-    def _format_authors(self, authors: List) -> str:
+    def _format_authors(self, authors: list) -> str:
         if len(authors) == 1:
             return authors[0]
         return "{} and {}".format(", ".join(authors[:-1]), authors[-1])
+
+
+if __name__ == "__main__":
+    import asyncio
+
+    client = GoogleBooksClient()
+    print(asyncio.run(client.arun("python")))

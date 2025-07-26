@@ -1,8 +1,9 @@
 from pathlib import Path
+from typing import Self
+
+from agent_core.models.llmconfig import Model
 from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
-
-from app.models.llmconfig import Model
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
 DOTENV_PATH = BASE_DIR / ".env"
@@ -62,7 +63,7 @@ class Settings(BaseSettings):
     wikipedia_doc_content_chars_max: int = 4000
 
     @model_validator(mode="after")
-    def check_at_least_one_llm_api_key(self) -> "Settings":
+    def check_at_least_one_llm_api_key(self) -> Self:
         if all(
             key is None
             for key in [
@@ -78,11 +79,9 @@ class Settings(BaseSettings):
         return self
 
     @model_validator(mode="after")
-    def check_langsmith_settings(self) -> "Settings":
+    def check_langsmith_settings(self) -> Self:
         if self.langsmith_tracing and self.langsmith_api_key is None:
-            raise ValueError(
-                "langsmith_api_key is required when langsmith_tracing is enabled."
-            )
+            raise ValueError("langsmith_api_key is required when langsmith_tracing is enabled.")
         return self
 
 
