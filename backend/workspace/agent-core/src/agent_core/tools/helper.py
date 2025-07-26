@@ -1,16 +1,18 @@
 import functools
 import inspect
+from collections.abc import Callable
 from contextvars import ContextVar
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
+
 from langchain_core.messages import ToolMessage
 from langchain_core.tools.base import InjectedToolCallId
-from langgraph.types import Command, StreamWriter
 from langgraph.config import get_stream_writer
+from langgraph.types import Command, StreamWriter
 
-from app.models.schemas import ToolCall
+from agent_core.models.toolcall import ToolCall
 
 
-def create_command(tool_name: str, tool_output: any, tool_call_id: str) -> Command:
+def create_command(tool_name: str, tool_output: Any, tool_call_id: str) -> Command:
     """Helper to create the standard Command object for tool results."""
     content = str(tool_output)
     return Command(
@@ -21,7 +23,7 @@ def create_command(tool_name: str, tool_output: any, tool_call_id: str) -> Comma
     )
 
 
-def tool_helper(func):
+def tool_helper(func: Callable) -> Callable:
     """Decorator to simplify creating LangGraph tools with streaming and Command wrapping.
 
     This decorator should be applied **directly** to the tool function, **before**
@@ -68,9 +70,7 @@ def tool_helper(func):
     if inspect.iscoroutinefunction(func):
 
         @functools.wraps(func)
-        async def async_wrapper(
-            *args, tool_call_id: Annotated[str, InjectedToolCallId], **kwargs
-        ):
+        async def async_wrapper(*args, tool_call_id: Annotated[str, InjectedToolCallId], **kwargs):
             with ToolStreamManager(tool_name):
                 raw_output = await func(*args, tool_call_id=tool_call_id, **kwargs)
             return create_command(tool_name, raw_output, tool_call_id)
@@ -79,9 +79,7 @@ def tool_helper(func):
     else:
 
         @functools.wraps(func)
-        def sync_wrapper(
-            *args, tool_call_id: Annotated[str, InjectedToolCallId], **kwargs
-        ):
+        def sync_wrapper(*args, tool_call_id: Annotated[str, InjectedToolCallId], **kwargs):
             with ToolStreamManager(tool_name):
                 raw_output = func(*args, tool_call_id=tool_call_id, **kwargs)
             return create_command(tool_name, raw_output, tool_call_id)
@@ -118,9 +116,7 @@ class ToolStreamManager:
     def __init__(self, tool_name: str):
         self.tool_name = tool_name
         self.writer: StreamWriter | None = None
-        self._completion_sent: bool = (
-            False  # Flag to track if completion was manually sent
-        )
+        self._completion_sent: bool = False  # Flag to track if completion was manually sent
         self._reset_token = None  # Token for resetting context var
 
     def _send(
@@ -140,11 +136,9 @@ class ToolStreamManager:
             write_data["tool_tokens"] = tool_tokens
 
         try:
-            self.writer(write_data)
+            self.writer(write_data)  # type: ignore
         except Exception as e:
-            raise RuntimeError(
-                f"Error sending stream message type '{type}' for tool {self.tool_name}: {e}"
-            )
+            raise RuntimeError(f"Error sending stream message type '{type}' for tool {self.tool_name}: {e}")
 
     def __enter__(self):
         """Acquires the stream writer, sends the 'start' event, and sets the context variable."""
@@ -152,16 +146,14 @@ class ToolStreamManager:
             self.writer = get_stream_writer()
 
             if not self.writer:
-                raise RuntimeError(
-                    f"Could not get stream writer for tool {self.tool_name}."
-                )
+                raise RuntimeError(f"Could not get stream writer for tool {self.tool_name}.")
 
             self._send("start")
             self._reset_token = _current_tool_stream.set(self)
 
             return self
 
-        except Exception as e:
+        except Exception:
             raise
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -176,21 +168,17 @@ class ToolStreamManager:
 
         return False
 
-    def send_partial_result(self, tool_tokens: str, metadata: dict = {}):
+    def send_partial_result(self, tool_tokens: str, metadata: dict = {}) -> None:
         """Sends an intermediate progress update during tool execution."""
         if self._completion_sent:
-            raise RuntimeError(
-                f"Attempted to send progress for {self.tool_name} after completion was already sent."
-            )
+            raise RuntimeError(f"Attempted to send progress for {self.tool_name} after completion was already sent.")
         else:
             self._send("delta", tool_tokens, metadata)
 
-    def send_complete(self, tool_tokens: str = None, metadata: dict = {}):
+    def send_complete(self, tool_tokens: str | None = None, metadata: dict = {}) -> None:
         """Sends the completed event, optionally with final tool call result."""
         if self._completion_sent:
-            raise RuntimeError(
-                f"Attempted to send completion for {self.tool_name} multiple times."
-            )
+            raise RuntimeError(f"Attempted to send completion for {self.tool_name} multiple times.")
         else:
             self._send("completed", tool_tokens, metadata)
             self._completion_sent = True
@@ -201,7 +189,5 @@ def get_current_tool_stream() -> ToolStreamManager:
 
     stream = _current_tool_stream.get()
     if stream is None:
-        raise RuntimeError(
-            "Invariant violation: ToolStreamManager context was unexpectedly None."
-        )
+        raise RuntimeError("Invariant violation: ToolStreamManager context was unexpectedly None.")
     return stream

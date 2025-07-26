@@ -1,15 +1,10 @@
 from fastapi import APIRouter
-
-from app.models.schemas import HealthResponse
+from models.schemas import HealthResponse
 
 sys_router = APIRouter(prefix="/sys", tags=["sys"])
 
 
-@sys_router.get(
-    "/health",
-    summary="Health Check",
-    response_model=HealthResponse,
-)
+@sys_router.get("/health", summary="Health Check")
 def health() -> HealthResponse:
     """
     Provides a simple health check endpoint to verify that the API service

@@ -1,43 +1,40 @@
+from collections.abc import AsyncGenerator
+
+from agent_core.graphs import react_graph
+from agent_core.tools.tools import TOOLS_INFO
 from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import StreamingResponse
-from typing import AsyncGenerator
-
-from app.services.workflows import react_agent
-from app.services.tools.tools import TOOLS_INFO
-from app.models.schemas import (
+from models.llmconfig import Model
+from models.schemas import (
     AegntRequest,
     AgentResponse,
     ModelResponse,
+    Tool,
     ToolResponse,
 )
-from app.models.llmconfig import Model
-from app.utils import format_sse
+from utils import format_sse
 
 agents_router = APIRouter(prefix="/agents", tags=["agents"])
 
 
-@agents_router.get(
-    "/models", summary="list all available models", response_model=ModelResponse
-)
+@agents_router.get("/models", summary="list all available models")
 def get_models() -> ModelResponse:
     """Retrieves a list of the LLMs currently configured
     and available for use with the agent endpoints (`/invoke` and `/stream`).
     """
     # TODO: check if the model is available
-    return ModelResponse(models=Model.list())
+    return ModelResponse(models=list(Model))
 
 
-@agents_router.get(
-    "/tools", summary="list all available tools", response_model=ToolResponse
-)
+@agents_router.get("/tools", summary="list all available tools")
 def get_tools() -> ToolResponse:
     """Provides a list of tools that the agent can potentially use during its
     execution to perform actions or retrieve information.
     """
-    return ToolResponse(tools=TOOLS_INFO)
+    return ToolResponse(tools=[Tool(**tool) for tool in TOOLS_INFO])
 
 
-@agents_router.post("/invoke", summary="invoke the agent", response_model=AgentResponse)
+@agents_router.post("/invoke", summary="invoke the agent")
 async def ainvoke_react_agent(request: AegntRequest) -> AgentResponse:
     """Processes the request by invoking the agent synchronously and returns the final
     response once the agent execution is complete. This endpoint is suitable for
@@ -50,12 +47,12 @@ async def ainvoke_react_agent(request: AegntRequest) -> AgentResponse:
         - Omit the `thread_id` field entirely. The backend will generate a new unique `thread_id` for the conversation.
     """
     try:
-        response = await react_agent.ainvoke(
+        response = await react_graph.ainvoke(
             input={
                 "messages": request.get_langchain_messages(),
-                "llm_config": request.llm_config,
+                "llm_config": request.llm_config.model_dump(),
             },
-            config=request.get_runnable_config(),
+            config=request.get_runnable_config(),  # type: ignore
         )
 
         parsed_response = {
@@ -77,7 +74,7 @@ async def ainvoke_react_agent(request: AegntRequest) -> AgentResponse:
         )
 
 
-async def stream_tokens(request: AegntRequest) -> AsyncGenerator[str, None]:
+async def stream_tokens(request: AegntRequest) -> AsyncGenerator[str]:
     try:
         is_stream_started = False
         in_llm_phase = False
@@ -87,29 +84,28 @@ async def stream_tokens(request: AegntRequest) -> AsyncGenerator[str, None]:
             "llm_config": request.llm_config.model_dump(),
         }
 
-        def create_sse_event(event_type: str, additional_data: dict = None) -> str:
+        def create_sse_event(event_type: str, additional_data: dict | None = None) -> str:
             event_data = {"type": event_type, **base_data}
             if additional_data:
                 event_data.update(additional_data)
             return format_sse(event_type, event_data)
 
-        async for event in react_agent.astream(
+        async for event in react_graph.astream(
             input={
                 "messages": request.get_langchain_messages(),
-                "llm_config": request.llm_config,
+                "llm_config": request.llm_config.model_dump(),
             },
-            config=request.get_runnable_config(),
+            config=request.get_runnable_config(),  # type: ignore
             stream_mode=["messages", "custom"],
         ):
-
-            event_type = event[0]
+            event_type = event[0]  # type: ignore
 
             if not is_stream_started:
                 is_stream_started = True
                 yield create_sse_event("stream.start")
 
             if event_type == "messages":
-                ai_message_chunk = event[1][0]
+                ai_message_chunk = event[1][0]  # type: ignore
 
                 if ai_message_chunk.response_metadata.get("finish_reason") == "stop":
                     all_llm_tokens = "".join(llm_tokens)
@@ -131,13 +127,11 @@ async def stream_tokens(request: AegntRequest) -> AsyncGenerator[str, None]:
                         {"llm_tokens": ai_message_chunk.content},
                     )
 
-            elif (
-                event_type == "custom"
-            ):  # This are the tool call result injected from tool nodes
+            elif event_type == "custom":  # This are the tool call result injected from tool nodes
                 if in_llm_phase:
                     in_llm_phase = False
 
-                event_data = event[1]
+                event_data = event[1]  # type: ignore
                 tool_type = event_data.get("type")
                 tool_name = event_data.get("tool_name")
                 metadata = event_data.get("metadata")
