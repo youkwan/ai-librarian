@@ -1,21 +1,39 @@
 [project]
-name = "agent-core"
-version = "0.1.0"
-description = "Add your description here"
+name = "ai-librarian"
+version = "0.2.0"
+description = ""
 requires-python = ">=3.13"
+readme = "README.md"
 dependencies = [
-    "duckduckgo-search>=8.0.2",
-    "httpx>=0.28.1",
-    "langchain-community>=0.3.24",
-    "langchain-core>=0.3.61",
-    "langchain-openai>=0.3.18",
-    "langgraph>=0.4.7",
-    "langsmith>=0.3.42",
-    "playwright>=1.52.0",
-    "pydantic>=2.11.5",
-    "rich>=14.0.0",
+    "agent-core",
+    "agent-apis",
 ]
 
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+[tool.uv.workspace]
+members = ["workspace/*"]
+
+[tool.uv.sources]
+agent-core = { workspace = true }
+agent-apis = { workspace = true }
+
+[dependency-groups]
+dev = [
+    "pyright>=1.1.401",
+    "pytest>=8.3.5",
+    "ruff>=0.11.8",
+]
+
+[tool.pyright]
+typeCheckingMode = "standard"
+include = [
+    "workspace/*",
+]
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "D", "ASYNC", "UP", "FAST001"]
