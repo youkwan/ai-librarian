@@ -5,16 +5,16 @@ description = ""
 requires-python = ">=3.13"
 readme = "README.md"
 dependencies = [
-    "agent-core",
-    "agent-apis",
+    "ai-librarian-core",
+    "ai-librarian-apis",
 ]
 
 [tool.uv.workspace]
-members = ["workspace/*"]
+members = ["ai_librarian_monorepo/*"]
 
 [tool.uv.sources]
-agent-core = { workspace = true }
-agent-apis = { workspace = true }
+ai-librarian-core = { workspace = true }
+ai-librarian-apis = { workspace = true }
 
 [dependency-groups]
 dev = [
@@ -26,7 +26,7 @@ dev = [
 [tool.pyright]
 typeCheckingMode = "standard"
 include = [
-    "workspace/*",
+    "ai_librarian_monorepo/*",
 ]
 
 [tool.ruff]
@@ -37,4 +37,4 @@ convention = "google"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "D", "ASYNC", "UP", "FAST001"]
-ignore = ["D100"]
+ignore = ["D100", "D102", "D103", "D105"]
