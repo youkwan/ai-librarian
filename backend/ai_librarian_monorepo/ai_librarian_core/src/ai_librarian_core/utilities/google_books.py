@@ -1,6 +1,6 @@
 import requests
 from langchain_core.utils import get_from_dict_or_env
-from pydantic import BaseModel, ConfigDict, model_validator
+from pydantic import BaseModel, model_validator
 
 GOOGLE_BOOKS_MAX_ITEM_SIZE = 5
 GOOGLE_BOOKS_API_URL = "https://www.googleapis.com/books/v1/volumes"
@@ -42,10 +42,6 @@ class RobustGoogleBooksAPIWrapper(BaseModel):
     google_api_key: str | None = None
     top_k_results: int = GOOGLE_BOOKS_MAX_ITEM_SIZE
 
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-
     @model_validator(mode="before")
     @classmethod
     def validate_environment(cls, values: dict) -> dict:
@@ -83,7 +79,6 @@ class RobustGoogleBooksAPIWrapper(BaseModel):
         i = 1
 
         for book in books:
-            print(book)
             volume_info = book["volumeInfo"]
             title = volume_info.get("title", "Unknown Title")
             authors = self._format_authors(volume_info.get("authors", []))

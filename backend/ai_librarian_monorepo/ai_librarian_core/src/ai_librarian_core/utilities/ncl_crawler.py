@@ -1,9 +1,6 @@
-import asyncio
 import urllib.parse
 from dataclasses import dataclass
 
-from langchain_core.callbacks import CallbackManagerForToolRun
-from langchain_core.tools import BaseTool
 from playwright.sync_api import BrowserContext, Page, TimeoutError, sync_playwright
 from pydantic import BaseModel, Field
 
@@ -176,27 +173,3 @@ class NCLCrawler(BaseModel):
         return "\n".join(
             [f"{i + 1}. {result['title']} ({result['author']}) - {result['link']}" for i, result in enumerate(results)]
         )
-
-
-class NCLCrawlerTool(BaseTool):
-    """A tool for searching the Taiwan National Central Library(NCL, 國家圖書館) catalog."""
-
-    name: str = "NCLCrawler"
-    description: str = (
-        "A tool for searching the Taiwan National Central Library(NCL, 國家圖書館) catalog."
-        "The search results are returned in a string, containing the title, author, and link of the book."
-        "The title and author are returned in the same language as the query, and the link is the URL of the book on the NCL website."
-    )
-    ncl_crawler: NCLCrawler = Field(default_factory=NCLCrawler)
-
-    def _run(
-        self,
-        query: str,
-        run_manager: CallbackManagerForToolRun | None = None,
-    ) -> str:
-        return self.ncl_crawler.run(query)
-
-
-if __name__ == "__main__":
-    ncl_crawler_tool = NCLCrawlerTool()
-    print(asyncio.run(ncl_crawler_tool.arun("中國")))
