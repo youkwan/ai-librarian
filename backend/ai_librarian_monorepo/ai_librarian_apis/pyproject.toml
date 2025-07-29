@@ -1,5 +1,5 @@
 [project]
-name = "agent-apis"
+name = "ai-librarian-apis"
 version = "0.1.0"
 description = "Add your description here"
 requires-python = ">=3.13"
@@ -7,12 +7,13 @@ dependencies = [
     "fastapi>=0.115.12",
     "pydantic>=2.11.5",
     "pydantic-settings>=2.9.1",
-    "agent-core",
+    "ai-librarian-core",
     "nest-asyncio>=1.6.0",
+    "uvicorn>=0.35.0",
 ]
 
 [tool.uv.sources]
-agent-core = { workspace = true }
+ai-librarian-core = { workspace = true }
 
 [build-system]
 requires = ["hatchling"]
