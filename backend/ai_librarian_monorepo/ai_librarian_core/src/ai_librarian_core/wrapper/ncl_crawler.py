@@ -27,7 +27,23 @@ class NCLCrawlerSearchNoResultsError(NCLCrawlerError):
 
 
 class NCLCrawler(BaseModel):
-    """A crawler for the National Central Library (NCL) catalog."""
+    """A crawler for the National Central Library (NCL) catalog.
+
+    This class provides methods to search the NCL catalog, retrieve book information,
+    and handle session management. It uses Playwright for browser automation.
+
+    Attributes:
+        top_k_results (int): The maximum number of search results to retrieve (default: 10, min: 1, max: 20).
+        cookie_timeout (int): The timeout in milliseconds for retrieving the session cookie (default: 10000).
+        search_timeout (int): The timeout in milliseconds for waiting for search results (default: 15000).
+
+    Example:
+        >>> ncl_crawler_tool = NCLCrawler()
+        >>> print(ncl_crawler_tool.run("AI"))
+        1. 人工智慧 (李宏毅) - https://aleweb.ncl.edu.tw/F/...
+        2. AI人工智慧導論 (Stuart Russell) - https://aleweb.ncl.edu.tw/F/...
+        ...
+    """
 
     top_k_results: int = Field(default=10, ge=1, le=20)
     cookie_timeout: int = Field(default=10000)
