@@ -4,42 +4,42 @@
 
 ## Key Features
 
-*   **Tooling**: Seamless integration with a variety of built-in tools.
-*   **Memory Management**: Efficient handling of conversational memory for stateful agents.
-*   **Streaming**: Support for real-time token streaming for interactive experiences.
+* **Tooling**: Seamless integration with a variety of built-in tools.
+* **Memory Management**: Efficient handling of conversational memory for stateful agents.
+* **Streaming**: Support for real-time token streaming for interactive experiences.
 
 ## Available Built-in Tools
 
 The following tools are readily available for use within `ai-librarian-core`:
 
-*   **Google Books**: Search for books on Google Books.
-*   **Google Search**: Search for information on Google.
-*   **YouTube Search**: Search for videos on YouTube.
-*   **Date Time**: Retrieve the current date and time.
-*   **arXiv Search**: Search for academic papers on arXiv.
-*   **DuckDuckGo Search**: Search for information using DuckDuckGo.
-*   **Wikipedia Search**: Search for information on Wikipedia.
-*   **OpenWeatherMap**: Get the current weather for a given location.
-*   **NCL Crawler**: A specialized crawler for the Taiwan National Central Library (台灣國家圖書館).
+* **Google Books**: Search for books on Google Books.
+* **Google Search**: Search for information on Google.
+* **YouTube Search**: Search for videos on YouTube.
+* **Date Time**: Retrieve the current date and time.
+* **arXiv Search**: Search for academic papers on arXiv.
+* **DuckDuckGo Search**: Search for information using DuckDuckGo.
+* **Wikipedia Search**: Search for information on Wikipedia.
+* **OpenWeatherMap**: Get the current weather for a given location.
+* **NCL Crawler**: A specialized crawler for the Taiwan National Central Library (台灣國家圖書館).
 
 ## Installation
 
 Follow these steps to set up the `ai-librarian-core` package:
 
-1.  **Clone the Repository:**
-    ```bash
-    git clone https://github.com/youkwan/ai-librarian.git
-    cd ai-librarian/backend/ai_librarian_monorepo/ai_librarian_core/
-    ```
+1. **Clone the Repository:**
 
-2.  **Install uv (if not already installed):**
-    This project utilizes [uv](https://github.com/astral-sh/uv) for efficient virtual environment and dependency management. If you do not have `uv` installed, please follow the [official installation guide](https://docs.astral.sh/uv/getting-started/installation/).
+   ```bash
+   git clone https://github.com/youkwan/ai-librarian.git
+   cd ai-librarian/backend/ai_librarian_monorepo/ai_librarian_core/
+   ```
+2. **Install uv (if not already installed):**
+   This project utilizes [uv](https://github.com/astral-sh/uv) for efficient virtual environment and dependency management. If you do not have `uv` installed, please follow the [official installation guide](https://docs.astral.sh/uv/getting-started/installation/).
+3. **Install Package Dependencies:**
+   Navigate to the `ai_librarian_core` directory and run the following command to install all necessary dependencies:
 
-3.  **Install Package Dependencies:**
-    Navigate to the `ai_librarian_core` directory and run the following command to install all necessary dependencies:
-    ```bash
-    uv sync
-    ```
+   ```bash
+   uv sync
+   ```
 
 ## Usage
 
