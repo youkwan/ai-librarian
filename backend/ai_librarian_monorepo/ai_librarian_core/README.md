@@ -19,6 +19,7 @@ The following tools are readily available for use within `ai-librarian-core`:
 *   **arXiv Search**: Search for academic papers on arXiv.
 *   **DuckDuckGo Search**: Search for information using DuckDuckGo.
 *   **Wikipedia Search**: Search for information on Wikipedia.
+*   **OpenWeatherMap**: Get the current weather for a given location.
 *   **NCL Crawler**: A specialized crawler for the Taiwan National Central Library (台灣國家圖書館).
 
 ## Installation
@@ -54,6 +55,8 @@ from ai_librarian_core.tools.tools import init_built_in_tools
 os.environ["GOOGLE_API_KEY"] = "your_google_api_key"
 # (Optional) For Google Search: If GOOGLE_CSE_ID is not provided, the Google Search tool will not be initialized.
 os.environ["GOOGLE_CSE_ID"] = "your_google_cse_id"
+# (Optional) For OpenWeatherMap: If OPENWEATHERMAP_API_KEY is not provided, the OpenWeatherMap tool will not be initialized.
+os.environ["OPENWEATHERMAP_API_KEY"] = "your_openweathermap_api_key"
 
 tools = init_built_in_tools()
 ```
