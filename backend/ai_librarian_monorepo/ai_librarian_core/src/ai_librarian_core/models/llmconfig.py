@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field
 
 class Model(StrEnum):
     """Enumeration of supported language models (LLMs).
+
     This enum can be extended with any model listed in the LangChain chat models documentation:
     https://python.langchain.com/docs/integrations/chat/
 
@@ -13,9 +14,7 @@ class Model(StrEnum):
     """
 
     # OpenAI
-    GPT_4O_MINI = (
-        "openai:gpt-4o-mini"  # First model will be the default in ReDoc
-    )
+    GPT_4O_MINI = "openai:gpt-4o-mini"  # First model will be the default in ReDoc
     GPT_4O = "openai:gpt-4o"
     GPT_4_5_PREVIEW = "openai:gpt-4.5-preview"
     O3_MINI = "openai:o3-mini"
@@ -37,9 +36,7 @@ class Model(StrEnum):
     GEMINI_1_5_PRO = "google_genai:gemini-1.5-pro"
 
     # Groq
-    LLAMA_4_SCOUT_17B_16E_INSTRUCT = (
-        "groq:meta-llama/llama-4-scout-17b-16e-instruct"
-    )
+    LLAMA_4_SCOUT_17B_16E_INSTRUCT = "groq:meta-llama/llama-4-scout-17b-16e-instruct"
     LLAMA_3_3_70B_VERSATILE = "groq:llama-3.3-70b-versatile"
     LLAMA_3_3_70B_SPECDEC = "groq:llama-3.3-70b-specdec"
     LLAMA_3_2_1B_PREVIEW = "groq:llama-3.2-1b-preview"
@@ -59,6 +56,7 @@ class Model(StrEnum):
 
 class LLMConfig(BaseModel):
     """The settings behind the Agent's LLM core.
+
     Controls the behavior and output characteristics of the language model.
     """
 
@@ -69,13 +67,19 @@ class LLMConfig(BaseModel):
     )
     temperature: float = Field(
         default=1,
-        description="Controls randomness of outputs. Higher values make output more random, lower values make output more deterministic.",
+        description=(
+            "Controls randomness of outputs. "
+            "Higher values make output more random, lower values make output more deterministic."
+        ),
         examples=[1],
         ge=0,
         le=2,
     )
     max_tokens: int | None = Field(
         default=None,
-        description="Maximum number of tokens (words/word pieces) to generate in the response. None means no specific limit beyond model's context length.",
+        description=(
+            "Maximum number of tokens (words/word pieces) to generate in the response. "
+            "None means no specific limit beyond model's context length."
+        ),
         examples=[None],
     )

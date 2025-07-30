@@ -3,6 +3,7 @@ from pydantic import BaseModel, Field
 
 class UsedTool(BaseModel):
     """Record of an external tool usage by the LLM during response generation.
+
     Captures both the tool name and its output result.
     """
 
