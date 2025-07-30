@@ -1,18 +1,37 @@
 import requests
 from langchain_core.utils import get_from_dict_or_env
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel, Field, model_validator
 
-GOOGLE_BOOKS_MAX_ITEM_SIZE = 5
 GOOGLE_BOOKS_API_URL = "https://www.googleapis.com/books/v1/volumes"
 
 
-class RobustGoogleBooksAPIWrapper(BaseModel):
+class GoogleBooksAPIWrapperError(Exception):
+    pass
+
+
+class GoogleBooksAPIWrapperHTTPError(GoogleBooksAPIWrapperError):
+    pass
+
+
+class GoogleBooksAPIWrapperTimeoutError(GoogleBooksAPIWrapperError):
+    pass
+
+
+class GoogleBooksAPIWrapperTooManyRedirectsError(GoogleBooksAPIWrapperError):
+    pass
+
+
+class GoogleBooksAPIWrapperRequestExceptionError(GoogleBooksAPIWrapperError):
+    pass
+
+
+class GoogleBooksAPIWrapper(BaseModel):
     """A modified Google Books API wrapper.
 
     A wrapper around Google Books API that adds error handling for missing fields and empty author lists.
     Inherits from the original GoogleBooksAPIWrapper and overrides methods to add robustness.
 
-    Original source:
+    Original GoogleBooksAPIWrapper class:
         https://github.com/langchain-ai/langchain-community/blob/main/libs/community/langchain_community/utilities/google_books.py
 
     Modifications:
@@ -31,16 +50,15 @@ class RobustGoogleBooksAPIWrapper(BaseModel):
         str: A formatted string containing book search results with title, authors, summary and source link
 
     Example:
-        >>> google_books_tool = GoogleBooksQueryRun(
-        ...     api_wrapper=RobustGoogleBooksAPIWrapper(
-        ...         google_api_key=GOOGLE_API_KEY,
-        ...         top_k_results=5
-        ...     )
-        ... )
+        >>> api_wrapper=GoogleBooksAPIWrapper(google_api_key=your_google_api_key, top_k_results=5)
+        >>> print(api_wrapper.run("AI"))
+        Here are 5 suggestions for books related to AI:
+        1. "AI Superpowers" by Kai-Fu Lee: An analysis of AI's future...
+        ...
     """
 
     google_api_key: str | None = None
-    top_k_results: int = GOOGLE_BOOKS_MAX_ITEM_SIZE
+    top_k_results: int = Field(default=5, ge=1, le=20)
 
     @model_validator(mode="before")
     @classmethod
@@ -58,13 +76,27 @@ class RobustGoogleBooksAPIWrapper(BaseModel):
             ("key", self.google_api_key),
         )
 
-        response = requests.get(GOOGLE_BOOKS_API_URL, params=params)
-        json = response.json()
+        try:
+            response = requests.get(GOOGLE_BOOKS_API_URL, params=params)
+            response.raise_for_status()
+            json = response.json()
 
-        if response.status_code != 200:
+        except requests.exceptions.HTTPError as e:
             code = response.status_code
             error = json.get("error", {}).get("message", "Internal failure")
-            return f"Unable to retrieve books got status code {code}: {error}"
+            raise GoogleBooksAPIWrapperHTTPError(
+                f"Unable to retrieve books got http status code {code}: {error}"
+            ) from e
+        except requests.exceptions.Timeout as e:
+            raise GoogleBooksAPIWrapperTimeoutError("The request to retrieve books timed out.") from e
+        except requests.exceptions.TooManyRedirects as e:
+            raise GoogleBooksAPIWrapperTooManyRedirectsError(
+                "Too many redirects occurred while trying to retrieve books."
+            ) from e
+        except requests.exceptions.RequestException as e:
+            raise GoogleBooksAPIWrapperRequestExceptionError("An error occurred while trying to retrieve books.") from e
+        except Exception as e:
+            raise GoogleBooksAPIWrapperError("An unexpected error occurred while trying to retrieve books.") from e
 
         return self._format(query, json.get("items", []))
 
