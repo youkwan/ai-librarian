@@ -7,81 +7,31 @@ from pydantic import BaseModel, Field
 NCL_ENTRY_URL = "https://aleweb.ncl.edu.tw/F"
 
 
-@dataclass
-class NCLCrawlerError(Exception):
-    """Base exception for errors related to the NCL crawler."""
-
-    message: str
-    status_code: int | None = None
-    _message_prefix: str = "NCL crawler error"
-
-    def __post_init__(self) -> None:
-        """Initializes the exception with a formatted message."""
-        super().__init__(f"{self._message_prefix}: {self.message}")
+class NCLCrawlerCookieTimeoutError(Exception):
+    pass
 
 
 @dataclass
-class NCLCrawlerCookieTimeoutError(NCLCrawlerError):
-    """Raised when the NCL crawler fails to obtain the session ID from cookies within the
-    specified timeout.
-
-    This typically happens if the NCL website takes too long to load or set the necessary
-    session cookies, preventing further interaction with the catalog.
-    """
-
-    message: str = "Failed to obtain session ID from cookies within the timeout."
-    status_code: int = 408
-    _message_prefix: str = "Cookie timeout error"
+class NCLCrawlerSessionIdNotFoundError(Exception):
+    pass
 
 
 @dataclass
-class NCLCrawlerSessionIdNotFoundError(NCLCrawlerError):
-    """Raised when the NCL crawler cannot find the session ID (ALEPH_SESSION_ID) in the
-    browser cookies after the page has loaded.
-
-    This indicates an unexpected issue with the NCL website's session management,
-    making it impossible to proceed with authenticated requests.
-    """
-
-    message: str = "Session ID (ALEPH_SESSION_ID) not found in cookies."
-    status_code: int = 404
-    _message_prefix: str = "Session ID not found error"
+class NCLCrawlerSearchTimeoutError(Exception):
+    pass
 
 
 @dataclass
-class NCLCrawlerSearchTimeoutError(NCLCrawlerError):
-    """Raised when the NCL crawler fails to receive search results within the specified
-    timeout after submitting a query.
-
-    This can occur due to slow server responses, network issues, or if the NCL website
-    is experiencing performance problems.
-    """
-
-    message: str = "Search results not received within the timeout."
-    status_code: int = 408
-    _message_prefix: str = "Search timeout error"
-
-
-@dataclass
-class NCLCrawlerSearchNoResultsError(NCLCrawlerError):
-    """Raised when the NCL crawler successfully performs a search, but no results are
-    returned for the given query.
-
-    This means the search query did not match any items in the NCL catalog, or there
-    was an issue with the search parameters leading to an empty result set.
-    """
-
-    message: str = "No search results found for the given query."
-    status_code: int = 404
-    _message_prefix: str = "No search results error"
+class NCLCrawlerSearchNoResultsError(Exception):
+    pass
 
 
 class NCLCrawler(BaseModel):
     """A crawler for the National Central Library (NCL) catalog."""
 
     top_k_results: int = Field(default=10, ge=1, le=20)
-    cookie_timeout: int = 10000
-    search_timeout: int = 10000
+    cookie_timeout: int = Field(default=10000, ge=1000)
+    search_timeout: int = Field(default=10000, ge=1000)
 
     def _process_workflow(self, query: str) -> list[dict[str, str]]:
         with sync_playwright() as p:
