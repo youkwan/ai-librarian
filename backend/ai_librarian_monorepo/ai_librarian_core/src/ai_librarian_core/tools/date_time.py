@@ -1,4 +1,3 @@
-import asyncio
 from datetime import UTC, datetime
 
 from langchain_core.tools import BaseTool
@@ -29,8 +28,3 @@ class DateTimeTool(BaseTool):
 
     async def _arun(self) -> str:
         return self._run()
-
-
-if __name__ == "__main__":
-    date_time_tool = DateTimeTool()
-    print(asyncio.run(date_time_tool.ainvoke({}), debug=True))
