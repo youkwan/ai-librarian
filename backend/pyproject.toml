@@ -37,4 +37,4 @@ convention = "google"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "D", "ASYNC", "UP", "FAST001"]
-ignore = ["D100", "D102", "D103", "D105"]
+ignore = ["D100", "D101", "D102", "D103", "D104", "D105"]
