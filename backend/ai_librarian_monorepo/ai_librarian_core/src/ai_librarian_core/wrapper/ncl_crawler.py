@@ -6,19 +6,23 @@ from pydantic import BaseModel, Field
 NCL_ENTRY_URL = "https://aleweb.ncl.edu.tw/F"
 
 
-class NCLCrawlerCookieTimeoutError(Exception):
+class NCLCrawlerError(Exception):
     pass
 
 
-class NCLCrawlerSessionIdNotFoundError(Exception):
+class NCLCrawlerCookieTimeoutError(NCLCrawlerError):
     pass
 
 
-class NCLCrawlerSearchTimeoutError(Exception):
+class NCLCrawlerSessionIdNotFoundError(NCLCrawlerError):
     pass
 
 
-class NCLCrawlerSearchNoResultsError(Exception):
+class NCLCrawlerSearchTimeoutError(NCLCrawlerError):
+    pass
+
+
+class NCLCrawlerSearchNoResultsError(NCLCrawlerError):
     pass
 
 
