@@ -1,5 +1,4 @@
 import urllib.parse
-from dataclasses import dataclass
 
 from playwright.sync_api import BrowserContext, Page, TimeoutError, sync_playwright
 from pydantic import BaseModel, Field
@@ -11,17 +10,14 @@ class NCLCrawlerCookieTimeoutError(Exception):
     pass
 
 
-@dataclass
 class NCLCrawlerSessionIdNotFoundError(Exception):
     pass
 
 
-@dataclass
 class NCLCrawlerSearchTimeoutError(Exception):
     pass
 
 
-@dataclass
 class NCLCrawlerSearchNoResultsError(Exception):
     pass
 
@@ -30,8 +26,8 @@ class NCLCrawler(BaseModel):
     """A crawler for the National Central Library (NCL) catalog."""
 
     top_k_results: int = Field(default=10, ge=1, le=20)
-    cookie_timeout: int = Field(default=10000, ge=1000)
-    search_timeout: int = Field(default=10000, ge=1000)
+    cookie_timeout: int = Field(default=10000)
+    search_timeout: int = Field(default=15000)
 
     def _process_workflow(self, query: str) -> list[dict[str, str]]:
         with sync_playwright() as p:
@@ -57,14 +53,19 @@ class NCLCrawler(BaseModel):
         try:
             page.wait_for_function("() => document.cookie.includes('ALEPH_SESSION_ID')", timeout=self.cookie_timeout)
         except TimeoutError as e:
-            raise NCLCrawlerCookieTimeoutError() from e
+            raise NCLCrawlerCookieTimeoutError(
+                f"Timeout while getting cookie, exceeded cookie_timeout parameter({self.cookie_timeout}ms). "
+                f"Please try increasing the cookie_timeout parameter."
+            ) from e
 
         all_cookies = context.cookies()
 
         for cookie in all_cookies:
             if cookie["name"] == "ALEPH_SESSION_ID":
                 return cookie["value"]
-        raise NCLCrawlerSessionIdNotFoundError()
+        raise NCLCrawlerSessionIdNotFoundError(
+            f"Could not find session ID in {NCL_ENTRY_URL} cookies. Please try again."
+        )
 
     def _encode_query(self, query: str) -> str:
         return urllib.parse.quote(query)
@@ -78,12 +79,17 @@ class NCLCrawler(BaseModel):
             )
             page.wait_for_selector('tr[valign="baseline"] td:nth-child(3) a.brieftit', timeout=self.search_timeout)
         except TimeoutError as e:
-            raise NCLCrawlerSearchTimeoutError() from e
+            raise NCLCrawlerSearchTimeoutError(
+                f"Timeout while searching for results, exceeded search_timeout parameter({self.search_timeout}ms). "
+                f"Please try increasing the search_timeout parameter."
+            ) from e
 
         result_rows_locator = page.locator('tr[valign="baseline"]')
         num_rows = result_rows_locator.count()
         if num_rows <= 0:
-            raise NCLCrawlerSearchNoResultsError()
+            raise NCLCrawlerSearchNoResultsError(
+                f"No results found for query: {query}. Please try again with a different query."
+            )
 
         results = []
         count = 0
