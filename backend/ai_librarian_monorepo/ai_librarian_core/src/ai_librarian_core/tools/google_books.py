@@ -1,4 +1,4 @@
-from ai_librarian_core.utilities.google_books import RobustGoogleBooksAPIWrapper
+from ai_librarian_core.wrapper.google_books import RobustGoogleBooksAPIWrapper
 from langchain_core.callbacks import CallbackManagerForToolRun
 from langchain_core.tools import BaseTool
 from pydantic import BaseModel, Field
