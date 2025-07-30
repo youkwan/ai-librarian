@@ -1,4 +1,4 @@
-from ai_librarian_core.utilities.ncl_crawler import NCLCrawler
+from ai_librarian_core.wrapper.ncl_crawler import NCLCrawler
 from langchain_core.callbacks import CallbackManagerForToolRun
 from langchain_core.tools import BaseTool
 from pydantic import Field
@@ -22,7 +22,7 @@ class NCLCrawlerToolRun(BaseTool):
     description: str = (
         "A tool for searching the Taiwan National Central Library(NCL, 國家圖書館) catalog."
         "The search results are returned in a string, containing the title, author, and link of the book."
-        "The title and author are returned in the same language as the query, and the link is the URL of the book on the NCL website."
+        "The title and author are returned in the same language as the query, and the link is the URL of the book."
     )
     ncl_crawler: NCLCrawler = Field(default_factory=NCLCrawler)
 
