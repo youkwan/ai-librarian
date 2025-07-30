@@ -22,8 +22,9 @@ class GoogleBooksQueryRun(BaseTool):
         args_schema (type[BaseModel]): Schema for input validation
 
     Example:
-        >>> tool = GoogleBooksQueryRun(api_wrapper=GoogleBooksAPIWrapper(google_api_key=os.getenv("GOOGLE_API_KEY")))
-        >>> print(tool.invoke("AI"))
+        >>> tool = GoogleBooksQueryRun(api_wrapper=GoogleBooksAPIWrapper(google_api_key="your_google_api_key"))
+        >>> result = tool.invoke({"query": "python"})
+        >>> print(result)
         Here are 5 suggestions for books related to Python Programming:
         1. "Python Crash Course" by Eric Matthes: A hands-on guide...
         ...
