@@ -13,19 +13,19 @@ from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.graph.state import CompiledStateGraph
 
 
-class ReactAgentError(Exception):
+class WorkflowError(Exception):
     pass
 
 
-class InvalidChatModelError(ReactAgentError):
+class InvalidChatModelError(WorkflowError):
     pass
 
 
-class ChatModelImportError(ReactAgentError):
+class ChatModelImportError(WorkflowError):
     pass
 
 
-class MissingAIMessageError(ReactAgentError):
+class MissingAIMessageError(WorkflowError):
     pass
 
 
@@ -62,7 +62,7 @@ class BaseReactAgent(ABC):
         except ImportError as e:
             raise ChatModelImportError("Model provider integration package is not installed.") from e
         except Exception as e:
-            raise ReactAgentError("An unexpected error occurred while trying to initialize the chat model.") from e
+            raise WorkflowError("An unexpected error occurred while trying to initialize the chat model.") from e
 
     @abstractmethod
     def _init_workflow(self) -> CompiledStateGraph:

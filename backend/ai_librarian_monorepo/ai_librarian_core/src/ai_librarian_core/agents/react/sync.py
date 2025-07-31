@@ -2,7 +2,7 @@ from collections.abc import Iterator
 from dataclasses import dataclass
 from typing import Literal
 
-from ai_librarian_core.agents.react.base import BaseReactAgent, MissingAIMessageError, WorkflowError
+from ai_librarian_core.agents.react.base import BaseReactAgent, MissingAIMessageError, ReactAgentError
 from ai_librarian_core.agents.react.state import MessagesState
 from ai_librarian_core.agents.utils import get_thread_id
 from ai_librarian_core.models.llm_config import LLMConfig
@@ -35,7 +35,7 @@ class ReactAgent(BaseReactAgent):
             return {"messages": [response]}
         # TODO(youkwan): Handle specific errors (couldn't find docs).
         except Exception as e:
-            raise WorkflowError("An unexpected error occurred while trying to invoke the chat model.") from e
+            raise ReactAgentError("An unexpected error occurred while trying to invoke the chat model.") from e
 
     def _route(self, state: MessagesState) -> Literal["tools", "__end__"]:
         messages = state.messages
