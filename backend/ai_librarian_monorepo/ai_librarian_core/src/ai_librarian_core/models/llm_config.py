@@ -1,7 +1,6 @@
-from dataclasses import dataclass
 from enum import StrEnum
 
-from pydantic import Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class Model(StrEnum):
@@ -55,8 +54,7 @@ class Model(StrEnum):
         return [model.value for model in cls]
 
 
-@dataclass(frozen=True)
-class LLMConfig:
+class LLMConfig(BaseModel):
     """The settings behind the Agent's LLM core.
 
     Controls the behavior and output characteristics of the language model.
@@ -85,3 +83,5 @@ class LLMConfig:
         ),
         examples=[None],
     )
+
+    model_config = ConfigDict(frozen=True)
