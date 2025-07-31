@@ -4,9 +4,9 @@ from typing import Literal
 
 from ai_librarian_core.agents.react.base import BaseReactAgent, MissingAIMessageError, ReactAgentError
 from ai_librarian_core.agents.react.state import MessagesState
-from ai_librarian_core.agents.utils import get_thread_id
 from ai_librarian_core.models.llm_config import LLMConfig
 from ai_librarian_core.models.used_tool import UsedTool
+from ai_librarian_core.utils.utils import get_thread_id
 from langchain_core.messages import AIMessage, BaseMessage, ToolMessage
 from langgraph.graph import StateGraph
 from langgraph.graph.state import CompiledStateGraph
