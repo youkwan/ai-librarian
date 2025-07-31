@@ -1,205 +1,262 @@
-# Ai-Librarian-Core
+# ai-librarian-core
 
-`ai-librarian-core` is a Python package designed to simplify the development of AI agents by providing a wrapper for LangChain and LangGraph. It offers comprehensive support for tooling, memory management, and streaming.
+`ai-librarian-core` is a Python package designed to streamline the development of AI agents. It provides a comprehensive wrapper around LangChain and LangGraph, offering seamless integration with essential functionalities such as tooling, memory management, and real-time streaming capabilities.
 
 ## Key Features
 
-* **Tooling**: Seamless integration with a variety of built-in tools.
-* **Memory Management**: Efficient handling of conversational memory for stateful agents.
-* **Streaming**: Support for real-time token streaming for interactive experiences.
+*   **Tooling Integration**: Easily integrate and manage a variety of pre-built and custom tools to extend agent capabilities.
+*   **Memory Management**: Efficiently handle conversational memory, enabling stateful and context-aware AI agents.
+*   **Streaming Support**: Facilitate interactive user experiences with real-time token streaming for agent responses.
 
-## Available Built-in Tools
+## Built-in Tools
 
-The following tools are readily available for use within `ai-librarian-core`:
+The following tools are readily available within `ai-librarian-core`:
 
-* **Google Books**: Search for books on Google Books.
-* **Google Search**: Search for information on Google.
-* **YouTube Search**: Search for videos on YouTube.
-* **Date Time**: Retrieve the current date and time.
-* **arXiv Search**: Search for academic papers on arXiv.
-* **DuckDuckGo Search**: Search for information using DuckDuckGo.
-* **Wikipedia Search**: Search for information on Wikipedia.
-* **OpenWeatherMap**: Get the current weather for a given location.
-* **NCL Crawler**: A specialized crawler for the Taiwan National Central Library (台灣國家圖書館).
+*   **Google Books**: Search for books and publications on Google Books.
+*   **Google Search**: Perform web searches using Google.
+*   **YouTube Search**: Search for videos on YouTube.
+*   **Date Time**: Retrieve the current date and time.
+*   **arXiv Search**: Search for academic papers and preprints on arXiv.
+*   **DuckDuckGo Search**: Conduct web searches using DuckDuckGo.
+*   **Wikipedia Search**: Access information from Wikipedia.
+*   **OpenWeatherMap**: Obtain current weather data for specified locations.
+*   **NCL Crawler**: A specialized web crawler for the National Central Library of Taiwan (國家圖書館).
 
 ## Installation
 
-Follow these steps to set up the `ai-librarian-core` package:
+To set up the `ai-librarian-core` package, follow these steps:
 
-1. **Clone the Repository:**
+1.  **Clone the Repository:**
 
-   ```bash
-   git clone https://github.com/youkwan/ai-librarian.git
-   cd ai-librarian/backend/ai_librarian_monorepo/ai_librarian_core/
-   ```
-2. **Install uv (if not already installed):**
-   This project utilizes [uv](https://github.com/astral-sh/uv) for efficient virtual environment and dependency management. If you do not have `uv` installed, please follow the [official installation guide](https://docs.astral.sh/uv/getting-started/installation/).
-3. **Install Package Dependencies:**
-   Navigate to the `ai_librarian_core` directory and run the following command to install all necessary dependencies:
+    ```bash
+    git clone https://github.com/youkwan/ai-librarian.git
+    cd ai-librarian/backend/ai_librarian_monorepo/ai_librarian_core/
+    ```
 
-   ```bash
-   uv sync
-   ```
+2.  **Install uv:**
+    This project leverages [uv](https://github.com/astral-sh/uv) for efficient virtual environment and dependency management. If you do not have `uv` installed, please follow the [official installation guide](https://docs.astral.sh/uv/getting-started/installation/).
+
+3.  **Install Playwright Browsers (Optional):**
+    If you intend to use the `NCL Crawler` tool, you must install the necessary browser binaries for Playwright:
+
+    ```bash
+    playwright install
+    ```
+
+4.  **Install Package Dependencies:**
+    Navigate to the `ai_librarian_core` directory and install all required dependencies:
+
+    ```bash
+    uv sync
+    ```
 
 ## Usage
 
+### Environment Variables
+
+Certain tools require API keys or specific IDs to function correctly. Set the following environment variables as needed:
+
+*   `OPENAI_API_KEY`: Required for OpenAI models.
+*   `GOOGLE_API_KEY`: Required for Google Books and Google Search.
+*   `GOOGLE_CSE_ID`: Required for Google Search.
+*   `OPENWEATHERMAP_API_KEY`: Required for the OpenWeatherMap tool.
+
 ### Initializing Tools
 
-The `init_built_in_tools()` function automatically initializes and includes all available built-in tools based on the environment variables you provide.
+The `init_built_in_tools()` function automatically initializes and loads all available built-in tools based on the configured environment variables.
 
 ```python
 import os
 from ai_librarian_core.tools.tools import init_built_in_tools
 
-# (Optional) For Google Books: If GOOGLE_API_KEY is not provided, the Google Books tool will not be initialized.
+# Example: Set environment variables (replace with your actual keys)
+os.environ["OPENAI_API_KEY"] = "your_openai_api_key"
 os.environ["GOOGLE_API_KEY"] = "your_google_api_key"
-# (Optional) For Google Search: If GOOGLE_CSE_ID is not provided, the Google Search tool will not be initialized.
 os.environ["GOOGLE_CSE_ID"] = "your_google_cse_id"
-# (Optional) For OpenWeatherMap: If OPENWEATHERMAP_API_KEY is not provided, the OpenWeatherMap tool will not be initialized.
 os.environ["OPENWEATHERMAP_API_KEY"] = "your_openweathermap_api_key"
 
 tools = init_built_in_tools()
+# tools will contain initialized instances of BaseTool subclasses
 ```
 
-Tools are based on `langchain_core.tools.BaseTool`. You can implement custom tools by subclassing `BaseTool` and adding them to the `tools` list. Tools can be directly invoked using `.invoke()` or `.ainvoke()`.
+Tools are based on `langchain_core.tools.BaseTool`. You can implement custom tools by subclassing `BaseTool` and appending them to the `tools` list. Tools can be directly invoked using their `invoke()` or `ainvoke()` methods.
 
 ```python
 from langchain_core.tools import BaseTool
 from ai_librarian_core.tools.date_time import DateTimeTool
 from ai_librarian_core.tools.tools import init_built_in_tools
 
+# Initialize tools
 tools: list[BaseTool] = init_built_in_tools()
 
+# Example: Directly invoking the DateTimeTool
 date_time_tool = DateTimeTool()
-result = date_time_tool.invoke({}) # Directly invoke the tool
+result = date_time_tool.invoke({})
 print(result)
 ```
 
+**Expected Output:**
+
 ```plaintext
-The current time is 2025-07-29T22:29:13.161976+08:00
+The current time is YYYY-MM-DDTHH:MM:SS.SSSSSS+ZZ:ZZ (actual time will vary)
 ```
 
-### Invoking a ReAct Agent
+### Invoking a `ReactAgent` (Synchronous)
+
+The `ReactAgent` class provides a synchronous interface for invoking the agent and processing its output.
+
+```python
+import os
+from langchain_core.messages import HumanMessage, SystemMessage
+from rich.pretty import pprint
+from ai_librarian_core.agents.react.synchronous import ReactAgent
+from ai_librarian_core.models.llm_config import LLMConfig
+from ai_librarian_core.tools.tools import init_built_in_tools
+
+# Set environment variables (replace with your actual keys)
+os.environ["OPENAI_API_KEY"] = "your_openai_api_key"
+os.environ["GOOGLE_API_KEY"] = "your_google_api_key"
+os.environ["GOOGLE_CSE_ID"] = "your_google_cse_key"
+
+# Initialize tools
+tools = init_built_in_tools()
+
+# Create and run the ReactAgent
+react_agent = ReactAgent(tools=tools)
+messages, used_tools = react_agent.run(
+    messages=[
+        SystemMessage(content="You are a helpful assistant."),
+        HumanMessage(
+            content="I'm learning how to build AI agents. Could you help me find online tutorials and some educational videos?"
+        ),
+    ],
+    thread_id="test-1234567890",
+    llm_config=LLMConfig(model="openai:gpt-4o-mini", temperature=1.0, max_tokens=1000),
+)
+
+pprint(messages)
+pprint(used_tools)
+```
+
+### Streaming from a `ReactAgent` (Synchronous)
+
+The `ReactAgent` also supports real-time streaming of responses.
+
+```python
+import os
+from ai_librarian_core.agents.react.synchronous import ReactAgent
+from ai_librarian_core.models.llm_config import LLMConfig
+from ai_librarian_core.tools.tools import init_built_in_tools
+from langchain_core.messages import HumanMessage, SystemMessage
+from rich.pretty import pprint
+
+# Set environment variables (replace with your actual keys)
+os.environ["OPENAI_API_KEY"] = "your_openai_api_key"
+os.environ["GOOGLE_API_KEY"] = "your_google_api_key"
+os.environ["GOOGLE_CSE_ID"] = "your_google_cse_key"
+
+# Initialize tools
+tools = init_built_in_tools()
+
+# Create and stream from the ReactAgent
+agent = ReactAgent(tools=tools)
+result = agent.stream(
+    [
+        SystemMessage(content="You are a helpful assistant."),
+        HumanMessage(
+            content="I'm learning how to build AI agents. Could you help me find online tutorials and some educational videos?"
+        ),
+    ],
+    thread_id="test-1234567890",
+    llm_config=LLMConfig(model="openai:gpt-4o-mini", temperature=1.0, max_tokens=1000),
+)
+
+for chunk in result:
+    pprint(chunk)
+```
+
+### Invoking an `AsyncReactAgent` (Asynchronous)
+
+For asynchronous operations, use the `AsyncReactAgent` class.
 
 ```python
 import asyncio
 import os
-from langgraph.checkpoint.memory import InMemorySaver
-from ai_librarian_core.graph.react import init_react_graph
+from ai_librarian_core.agents.react.asynchronous import AsyncReactAgent
+from langchain_core.messages import HumanMessage, SystemMessage
+from rich.pretty import pprint
+from ai_librarian_core.models.llm_config import LLMConfig
 from ai_librarian_core.tools.tools import init_built_in_tools
 
+# Set environment variables (replace with your actual keys)
 os.environ["OPENAI_API_KEY"] = "your_openai_api_key"
+os.environ["GOOGLE_API_KEY"] = "your_google_api_key"
+os.environ["GOOGLE_CSE_ID"] = "your_google_cse_key"
 
+# Initialize tools
 tools = init_built_in_tools()
 
-in_memory_react_graph = init_react_graph(
-    name="react_graph",
-    tools=tools,
-    checkpointer=InMemorySaver(),
-)
-
-result = asyncio.run(
-    in_memory_react_graph.ainvoke(
-        input={
-            "messages": [
-                {"role": "system", "content": "you are a helpful assistant"},
-                {
-                    "role": "user",
-                    "content": "I'm learning how to build AI agents. Could you help me find online tutorials and some educational videos?",
-                },
-            ],
-            "llm_config": {
-                "model": "openai:gpt-4o-mini",
-                "temperature": 1.0,
-            },
-        },
-        config={
-            "configurable": {
-                "thread_id": "thread-1234567890",
-            },
-        },
+# Create and run the AsyncReactAgent
+agent = AsyncReactAgent(tools=tools)
+async def run_async_agent():
+    messages, used_tools = await agent.run(
+        [
+            SystemMessage(content="You are a helpful assistant."),
+            HumanMessage(
+                content="I'm learning how to build AI agents. Could you help me find online tutorials and some educational videos?"
+            ),
+        ],
+        thread_id="test-1234567890",
+        llm_config=LLMConfig(model="openai:gpt-4o-mini", temperature=1.0, max_tokens=1000),
     )
-)
+    pprint(messages)
+    pprint(used_tools)
 
-print(result["messages"][-1].content)
+asyncio.run(run_async_agent())
 ```
 
-```plaintext
-Here are some resources to help you learn how to build AI agents:
+### Streaming from an `AsyncReactAgent` (Asynchronous)
 
-### Online Tutorials
-1. **Building AI Agents in Pure Python - Beginner Course**: A comprehensive course that covers the fundamentals of building AI agents. This course is segmented into three chapters, focusing on foundational understanding, hands-on tutorials, and practical applications.
-
-2. **Free Video Course on DeepLearning.ai**: This course guides you from beginner to expert in understanding, using, and building AI agents. It covers core techniques for building responsive AI systems.
-
-3. **Vertex AI Agent Builder**: A resource that helps you turn your processes into multi-agent experiences, focusing on building rather than disrupting existing systems.
-
-### Educational Videos
-Here are some YouTube videos that can help you get started:
-
-1. [Building AI Agents - Video 1](https://www.youtube.com/watch?v=_Udb5NC6vTI&pp=ygUSYnVpbGRpbmcgQUkgYWdlbnRz)
-2. [Building AI Agents - Video 2](https://www.youtube.com/watch?v=T1Lowy1mnEg&pp=ygUSYnVpbGRpbmcgQUkgYWdlbnRz)
-3. [Building AI Agents - Video 3](https://www.youtube.com/watch?v=w0H1-b044KY&pp=ygUSYnVpbGRpbmcgQUkgYWdlbnRz)
-4. [Building AI Agents - Video 4](https://www.youtube.com/watch?v=bZzyPscbtI8&pp=ygUSYnVpbGRpbmcgQUkgYWdlbnRz)
-5. [Building AI Agents - Video 5](https://www.youtube.com/watch?v=NUPjbWsSe7s&pp=ygUSYnVpbGRpbmcgQUkgYWdlbnRz)
-
-These resources should provide a solid foundation for your learning journey in building AI agents!
-```
-
-### Streaming from a ReAct Agent
+Asynchronous streaming for real-time response generation.
 
 ```python
 import asyncio
-from langgraph.checkpoint.memory import InMemorySaver
-from ai_librarian_core.graph.react import init_react_graph
+import os
+from ai_librarian_core.agents.react.asynchronous import AsyncReactAgent
+from ai_librarian_core.models.llm_config import LLMConfig
 from ai_librarian_core.tools.tools import init_built_in_tools
+from langchain_core.messages import HumanMessage, SystemMessage
+from rich.pretty import pprint
 
+# Set environment variables (replace with your actual keys)
 os.environ["OPENAI_API_KEY"] = "your_openai_api_key"
+os.environ["GOOGLE_API_KEY"] = "your_google_api_key"
+os.environ["GOOGLE_CSE_ID"] = "your_google_cse_key"
 
+# Initialize tools
 tools = init_built_in_tools()
-in_memory_react_graph = init_react_graph("react_graph", tools, InMemorySaver())
 
-async def stream_tokens():
-    async for msg, metadata in in_memory_react_graph.astream(
-        input={
-            "messages": [
-                {"role": "system", "content": "you are a helpful assistant"},
-                {
-                    "role": "user",
-                    "content": "I'm learning how to build AI agents. Could you help me find online tutorials and some educational videos?",
-                },
-            ],
-            "llm_config": {
-                "model": "openai:gpt-4o-mini",
-                "temperature": 1.0,
-            },
-        },
-        config={
-            "configurable": {
-                "thread_id": "thread-1234567890",
-            },
-        },
-        stream_mode="messages",
-    ):
-        print(msg.content, end="|", flush=True)
+# Create and stream from the AsyncReactAgent
+agent = AsyncReactAgent(tools=tools)
+async def stream_async_agent():
+    result = await agent.stream(
+        [
+            SystemMessage(content="You are a helpful assistant."),
+            HumanMessage(
+                content="I'm learning how to build AI agents. Could you help me find online tutorials and some educational videos?"
+            )
+        ],
+        thread_id="test-1234567890",
+        llm_config=LLMConfig(model="openai:gpt-4o-mini", temperature=1.0, max_tokens=1000),
+    )
+    async for chunk in result:
+        pprint(chunk)
 
-asyncio.run(stream_tokens())
+asyncio.run(stream_async_agent())
 ```
 
-```plaintext
-Here| are| some| resources| to| help| you| learn| how| to| build| AI| agents|:
+## TODO
 
-|###| Online| Tutorials|
-|1|.| **|Master|ing| AI| Agents|**|:| A| list| of| the| best| free| courses|,| tutorials|,| and| learning| tools| for| AI| agents|.| You| can| find| courses| ranging| from| beginner| to| advanced| levels| that| cover| the| fundamentals| of| understanding|,| using|,| and| building| AI| agents|.| Here| are| some| highlights|:
-|  | -| **|AI| Agents| Explained|**|:| A| short| video| guide| that| provides| a| good| introduction|.
-|  | -| **|Begin|ner|-friendly| courses|**|:| There| are| courses| that| take| you| from| concept| to| code|,| covering| the| fundamentals| of| building| AI| agents| in| detail|.
-
-|2|.| **|Building| an| AI| Agent| with| Vertex| AI| Agent| Builder|**|:| This| tutorial| covers| how| to| build| AI| agents|,| automation| bots|,| chat| assistants|,| and| more| without| requiring| APIs|.| Consider| exploring| this| if| you're| interested| in| practical| applications|.
-
-|###| Educational| Videos|
-|Here| are| a| couple| of| educational| videos| on| AI| agents|:
-|1|.| [|AI| Agents| Explained|:| Educational| Video|](|https|://|www|.youtube|.com|/watch|?v|=|Fw|OT|s|4|Ux|QS|4|&|pp|=|yg|Uc|QU|kg|YW|dl|bn|R|z|IG|V|kd|WN|hd|Gl|v|bm|Fs|IH|Z|p|Z|GV|vc|w|%|3D|%|3D|)
-|2|.| [|Another| AI| Agents| Educational| Video|](|https|://|www|.youtube|.com|/watch|?v|=h|L|JT|c|V|HW|8|_I|&|pp|=|yg|Uc|QU|kg|YW|dl|bn|R|z|IG|V|kd|WN|hd|Gl|v|bm|Fs|IH|Z|p|Z|GV|vc|w|%|3D|%|3D|)
-
-|Feel| free| to| explore| these| resources| to| enhance| your| understanding| and| skills| in| building| AI| agents|!||
-```
+1.  Deep search agent implementation.
+2.  MCP (Multi-hop Reasoning) support.
+3.  Tool for searching resources on the National Library of Public Information (國立公共資訊圖書館).

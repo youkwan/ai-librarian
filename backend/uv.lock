@@ -102,7 +102,7 @@ requires-dist = [
     { name = "playwright", specifier = ">=1.52.0" },
     { name = "pydantic", specifier = ">=2.11.5" },
     { name = "pyowm", specifier = ">=3.3.0" },
-    { name = "rich", specifier = ">=14.0.0" },
+    { name = "rich", specifier = ">=14.1.0" },
     { name = "setuptools", specifier = ">=80.9.0" },
     { name = "wikipedia", specifier = ">=1.4.0" },
     { name = "youtube-search", specifier = ">=2.1.2" },
