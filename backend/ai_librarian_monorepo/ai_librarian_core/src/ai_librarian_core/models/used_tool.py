@@ -1,8 +1,22 @@
+from __future__ import annotations
+
 from pydantic import BaseModel, Field
 
 
-class ToolCall(BaseModel):
+class Tool(BaseModel):
+    """Tool schema. Returns the name and description of a tool."""
+
+    tool_name: str = Field(..., description="The name of the tool.", examples=["get_temperature"])
+    tool_description: str = Field(
+        ...,
+        description="The description of the tool.",
+        examples=["Get the temperature in a given location"],
+    )
+
+
+class UsedTool(BaseModel):
     """Record of an external tool usage by the LLM during response generation.
+
     Captures both the tool name and its output result.
     """
 

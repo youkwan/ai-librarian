@@ -1,9 +1,11 @@
-from enum import Enum
-from pydantic import BaseModel, Field
+from enum import StrEnum
+
+from pydantic import BaseModel, ConfigDict, Field
 
 
-class Model(str, Enum):
+class Model(StrEnum):
     """Enumeration of supported language models (LLMs).
+
     This enum can be extended with any model listed in the LangChain chat models documentation:
     https://python.langchain.com/docs/integrations/chat/
 
@@ -54,6 +56,7 @@ class Model(str, Enum):
 
 class LLMConfig(BaseModel):
     """The settings behind the Agent's LLM core.
+
     Controls the behavior and output characteristics of the language model.
     """
 
@@ -64,13 +67,21 @@ class LLMConfig(BaseModel):
     )
     temperature: float = Field(
         default=1,
-        description="Controls randomness of outputs. Higher values make output more random, lower values make output more deterministic.",
+        description=(
+            "Controls randomness of outputs. "
+            "Higher values make output more random, lower values make output more deterministic."
+        ),
         examples=[1],
         ge=0,
         le=2,
     )
     max_tokens: int | None = Field(
         default=None,
-        description="Maximum number of tokens (words/word pieces) to generate in the response. None means no specific limit beyond model's context length.",
+        description=(
+            "Maximum number of tokens (words/word pieces) to generate in the response. "
+            "None means no specific limit beyond model's context length."
+        ),
         examples=[None],
     )
+
+    model_config = ConfigDict(frozen=True)

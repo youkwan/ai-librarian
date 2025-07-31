@@ -1,27 +1,40 @@
 [project]
-name = "app"
+name = "ai-librarian"
 version = "0.2.0"
 description = ""
 requires-python = ">=3.13"
+readme = "README.md"
 dependencies = [
-    "arxiv>=2.2.0",
-    "duckduckgo-search>=8.0.1",
-    "fastapi>=0.115.12",
-    "langchain>=0.3.23",
-    "langchain-anthropic>=0.3.10",
-    "langchain-community>=0.3.21",
-    "langchain-google-genai>=2.1.2",
-    "langchain-groq>=0.3.2",
-    "langchain-openai>=0.3.12",
-    "langgraph>=0.3.25",
-    "playwright>=1.51.0",
-    "pydantic-settings>=2.8.1",
-    "python-dotenv>=1.1.0",
-    "rich>=14.0.0",
-    "uvicorn>=0.34.2",
-    "wikipedia>=1.4.0",
+    "ai-librarian-core",
+    "ai-librarian-apis",
 ]
 
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+[tool.uv.workspace]
+members = ["ai_librarian_monorepo/*"]
+
+[tool.uv.sources]
+ai-librarian-core = { workspace = true }
+ai-librarian-apis = { workspace = true }
+
+[dependency-groups]
+dev = [
+    "pyright>=1.1.401",
+    "pytest>=8.3.5",
+    "ruff>=0.11.8",
+]
+
+[tool.pyright]
+typeCheckingMode = "standard"
+include = [
+    "ai_librarian_monorepo/*",
+]
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "D", "ASYNC", "UP", "FAST001"]
+ignore = ["D100", "D101", "D102", "D103", "D104", "D105"]
