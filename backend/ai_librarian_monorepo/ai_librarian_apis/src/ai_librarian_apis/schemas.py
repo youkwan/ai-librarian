@@ -2,13 +2,14 @@ from __future__ import annotations
 
 from enum import Enum
 
-from agent_core.models.llmconfig import LLMConfig, Model
-from agent_core.models.used_tool import UsedTool
+from ai_librarian_core.models.llm_config import LLMConfig, Model
+from ai_librarian_core.models.used_tool import UsedTool
 from langchain.chat_models import init_chat_model
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import AIMessage, AnyMessage, HumanMessage, SystemMessage
 from pydantic import BaseModel, Field
-from utils import generate_thread_id
+
+from ai_librarian_apis.utils.utils import generate_thread_id
 
 
 class HealthResponse(BaseModel):

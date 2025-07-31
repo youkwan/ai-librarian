@@ -11,7 +11,7 @@ from schemas import (
     ModelResponse,
     ToolResponse,
 )
-from utils import format_sse
+from backend.ai_librarian_monorepo.ai_librarian_apis.utils.utils import format_sse
 
 agents_router = APIRouter(prefix="/agents", tags=["agents"])
 

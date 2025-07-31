@@ -1,4 +1,4 @@
-from core.config import settings
+from ai_librarian_apis.core.settings import settings
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
