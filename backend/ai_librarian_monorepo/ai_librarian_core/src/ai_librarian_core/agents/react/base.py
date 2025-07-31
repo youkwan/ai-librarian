@@ -4,9 +4,10 @@ from dataclasses import dataclass
 
 from ai_librarian_core.agents.react.state import MessagesState
 from ai_librarian_core.models.llm_config import LLMConfig
+from ai_librarian_core.models.used_tool import UsedTool
 from langchain.chat_models import init_chat_model
 from langchain.chat_models.base import BaseChatModel
-from langchain_core.messages import BaseMessage
+from langchain_core.messages import AIMessage, BaseMessage
 from langchain_core.tools import BaseTool
 from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.checkpoint.memory import InMemorySaver
@@ -69,7 +70,7 @@ class BaseReactAgent(ABC):
         pass
 
     @abstractmethod
-    def run(self) -> dict[str, list[BaseMessage]]:
+    def run(self) -> tuple[AIMessage, list[UsedTool]]:
         pass
 
     @abstractmethod
