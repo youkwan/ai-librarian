@@ -1,38 +1,37 @@
 from abc import ABC, abstractmethod
-from collections.abc import AsyncIterator, Iterator
 from dataclasses import dataclass
+from typing import Any
 
 from ai_librarian_core.agents.react.state import MessagesState
 from ai_librarian_core.models.llm_config import LLMConfig
 from langchain.chat_models import init_chat_model
 from langchain.chat_models.base import BaseChatModel
-from langchain_core.messages import BaseMessage
 from langchain_core.tools import BaseTool
 from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.graph.state import CompiledStateGraph
 
 
-class WorkflowError(Exception):
+class DeepSearchAgentError(Exception):
     pass
 
 
-class InvalidChatModelError(WorkflowError):
+class InvalidChatModelError(DeepSearchAgentError):
     pass
 
 
-class ChatModelImportError(WorkflowError):
+class ChatModelImportError(DeepSearchAgentError):
     pass
 
 
-class MissingAIMessageError(WorkflowError):
+class MissingAIMessageError(DeepSearchAgentError):
     pass
 
 
 @dataclass
-class BaseReactAgent(ABC):
+class BaseDeepSearchAgent(ABC):
     tools: list[BaseTool]
-    name: str = "react_agent"
+    name: str = "deep_search_agent"
     checkpointer: BaseCheckpointSaver = InMemorySaver()
 
     @property
@@ -62,16 +61,16 @@ class BaseReactAgent(ABC):
         except ImportError as e:
             raise ChatModelImportError("Model provider integration package is not installed.") from e
         except Exception as e:
-            raise WorkflowError("An unexpected error occurred while trying to initialize the chat model.") from e
+            raise DeepSearchAgentError("An unexpected error occurred while trying to initialize the chat model.") from e
 
     @abstractmethod
     def _init_workflow(self) -> CompiledStateGraph:
         pass
 
     @abstractmethod
-    def run(self) -> dict[str, list[BaseMessage]]:
+    def run(self) -> Any:
         pass
 
     @abstractmethod
-    def stream(self) -> Iterator[dict[str, list[BaseMessage]]] | AsyncIterator[dict[str, list[BaseMessage]]]:
+    def stream(self) -> Any:
         pass
