@@ -4,8 +4,8 @@ from typing import Literal, Self
 from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-BASE_DIR = Path(__file__).resolve().parent.parent
-DOTENV_PATH = BASE_DIR / ".env"
+PROJECT_ROOT_DIR = Path(__file__).resolve().parents[3]
+DOTENV_PATH = PROJECT_ROOT_DIR / ".env"
 
 
 class Settings(BaseSettings):
@@ -52,7 +52,8 @@ class Settings(BaseSettings):
             ]
         ):
             raise ValueError(
-                "At least one LLM API key must be provided (one of: openai_api_key, anthropic_api_key, google_api_key, groq_api_key)"
+                "At least one LLM API key must be provided "
+                "(one of: openai_api_key, anthropic_api_key, google_api_key, groq_api_key)"
             )
         return self
 
@@ -71,7 +72,12 @@ def setup_settings():
 
 settings = setup_settings()
 
-if __name__ == "__main__":
+
+def main():
     from rich.pretty import pprint
 
     pprint(settings)
+
+
+if __name__ == "__main__":
+    main()
