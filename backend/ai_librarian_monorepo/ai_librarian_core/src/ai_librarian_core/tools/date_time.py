@@ -1,6 +1,11 @@
 from datetime import UTC, datetime
 
 from langchain_core.tools import BaseTool
+from pydantic import BaseModel
+
+
+class DateTimeInput(BaseModel):
+    pass
 
 
 class DateTimeTool(BaseTool):
@@ -20,6 +25,7 @@ class DateTimeTool(BaseTool):
 
     name: str = "date_time"
     description: str = "A tool that returns the current date and time in ISO 8601 format."
+    args_schema: type[BaseModel] = DateTimeInput
 
     def _run(self) -> str:
         local_time = datetime.now(UTC).astimezone()

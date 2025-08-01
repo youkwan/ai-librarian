@@ -1,7 +1,13 @@
 from ai_librarian_core.wrapper.ncl_crawler import NCLCrawler
 from langchain_core.callbacks import CallbackManagerForToolRun
 from langchain_core.tools import BaseTool
-from pydantic import Field
+from pydantic import BaseModel, Field
+
+
+class NCLCrawlerInput(BaseModel):
+    """The input of the NCLCrawler tool."""
+
+    query: str = Field(description="The query to search the NCL catalog.")
 
 
 class NCLCrawlerToolRun(BaseTool):
@@ -26,6 +32,7 @@ class NCLCrawlerToolRun(BaseTool):
         "The title and author are returned in the same language as the query, and the link is the URL of the book."
     )
     ncl_crawler: NCLCrawler = Field(default_factory=NCLCrawler)
+    args_schema: type[BaseModel] = NCLCrawlerInput
 
     def _run(
         self,
