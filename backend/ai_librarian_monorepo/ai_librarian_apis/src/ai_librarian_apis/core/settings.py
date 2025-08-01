@@ -7,9 +7,6 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 BASE_DIR = Path(__file__).resolve().parent.parent
 DOTENV_PATH = BASE_DIR / ".env"
 
-if not DOTENV_PATH.is_file():
-    raise FileNotFoundError(f".env file not found at expected location: {DOTENV_PATH}")
-
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
@@ -66,8 +63,13 @@ class Settings(BaseSettings):
         return self
 
 
-settings = Settings()
+def setup_settings():
+    if not DOTENV_PATH.is_file():
+        raise FileNotFoundError(f".env file not found at expected location: {DOTENV_PATH}")
+    return Settings()
 
+
+settings = setup_settings()
 
 if __name__ == "__main__":
     from rich.pretty import pprint
