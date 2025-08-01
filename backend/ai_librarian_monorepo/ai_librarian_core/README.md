@@ -63,11 +63,11 @@ Certain tools require API keys or specific IDs to function correctly. Set the fo
 
 ### Initializing Tools
 
-The `init_built_in_tools()` function automatically initializes and loads all available built-in tools based on the configured environment variables.
+The `get_built_in_tools()` function automatically initializes and loads all available built-in tools based on the configured environment variables.
 
 ```python
 import os
-from ai_librarian_core.tools.tools import init_built_in_tools
+from ai_librarian_core.tools.tools import get_built_in_tools
 
 # Example: Set environment variables (replace with your actual keys)
 os.environ["OPENAI_API_KEY"] = "your_openai_api_key"
@@ -75,7 +75,7 @@ os.environ["GOOGLE_API_KEY"] = "your_google_api_key"
 os.environ["GOOGLE_CSE_ID"] = "your_google_cse_id"
 os.environ["OPENWEATHERMAP_API_KEY"] = "your_openweathermap_api_key"
 
-tools = init_built_in_tools()
+tools = get_built_in_tools()
 # tools will contain initialized instances of BaseTool subclasses
 ```
 
@@ -84,10 +84,10 @@ Tools are based on `langchain_core.tools.BaseTool`. You can implement custom too
 ```python
 from langchain_core.tools import BaseTool
 from ai_librarian_core.tools.date_time import DateTimeTool
-from ai_librarian_core.tools.tools import init_built_in_tools
+from ai_librarian_core.tools.tools import get_built_in_tools
 
 # Initialize tools
-tools: list[BaseTool] = init_built_in_tools()
+tools: list[BaseTool] = get_built_in_tools()
 
 # Example: Directly invoking the DateTimeTool
 date_time_tool = DateTimeTool()
@@ -111,7 +111,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from rich.pretty import pprint
 from ai_librarian_core.agents.react.synchronous import ReactAgent
 from ai_librarian_core.models.llm_config import LLMConfig
-from ai_librarian_core.tools.tools import init_built_in_tools
+from ai_librarian_core.tools.tools import get_built_in_tools
 
 # Set environment variables (replace with your actual keys)
 os.environ["OPENAI_API_KEY"] = "your_openai_api_key"
@@ -119,7 +119,7 @@ os.environ["GOOGLE_API_KEY"] = "your_google_api_key"
 os.environ["GOOGLE_CSE_ID"] = "your_google_cse_key"
 
 # Initialize tools
-tools = init_built_in_tools()
+tools = get_built_in_tools()
 
 # Create and run the ReactAgent
 react_agent = ReactAgent(tools=tools)
@@ -146,7 +146,7 @@ The `ReactAgent` also supports real-time streaming of responses.
 import os
 from ai_librarian_core.agents.react.synchronous import ReactAgent
 from ai_librarian_core.models.llm_config import LLMConfig
-from ai_librarian_core.tools.tools import init_built_in_tools
+from ai_librarian_core.tools.tools import get_built_in_tools
 from langchain_core.messages import HumanMessage, SystemMessage
 from rich.pretty import pprint
 
@@ -156,7 +156,7 @@ os.environ["GOOGLE_API_KEY"] = "your_google_api_key"
 os.environ["GOOGLE_CSE_ID"] = "your_google_cse_key"
 
 # Initialize tools
-tools = init_built_in_tools()
+tools = get_built_in_tools()
 
 # Create and stream from the ReactAgent
 agent = ReactAgent(tools=tools)
@@ -186,7 +186,7 @@ from ai_librarian_core.agents.react.asynchronous import AsyncReactAgent
 from langchain_core.messages import HumanMessage, SystemMessage
 from rich.pretty import pprint
 from ai_librarian_core.models.llm_config import LLMConfig
-from ai_librarian_core.tools.tools import init_built_in_tools
+from ai_librarian_core.tools.tools import get_built_in_tools
 
 # Set environment variables (replace with your actual keys)
 os.environ["OPENAI_API_KEY"] = "your_openai_api_key"
@@ -194,7 +194,7 @@ os.environ["GOOGLE_API_KEY"] = "your_google_api_key"
 os.environ["GOOGLE_CSE_ID"] = "your_google_cse_key"
 
 # Initialize tools
-tools = init_built_in_tools()
+tools = get_built_in_tools()
 
 # Create and run the AsyncReactAgent
 agent = AsyncReactAgent(tools=tools)
@@ -224,7 +224,7 @@ import asyncio
 import os
 from ai_librarian_core.agents.react.asynchronous import AsyncReactAgent
 from ai_librarian_core.models.llm_config import LLMConfig
-from ai_librarian_core.tools.tools import init_built_in_tools
+from ai_librarian_core.tools.tools import get_built_in_tools
 from langchain_core.messages import HumanMessage, SystemMessage
 from rich.pretty import pprint
 
@@ -234,7 +234,7 @@ os.environ["GOOGLE_API_KEY"] = "your_google_api_key"
 os.environ["GOOGLE_CSE_ID"] = "your_google_cse_key"
 
 # Initialize tools
-tools = init_built_in_tools()
+tools = get_built_in_tools()
 
 # Create and stream from the AsyncReactAgent
 agent = AsyncReactAgent(tools=tools)

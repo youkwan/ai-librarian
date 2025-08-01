@@ -14,7 +14,7 @@ from langchain_google_community import GoogleSearchAPIWrapper, GoogleSearchRun
 from pydantic import ValidationError
 
 
-def init_built_in_tools() -> list[BaseTool]:
+def get_built_in_tools() -> list[BaseTool]:
     tools = [
         DateTimeTool(),
         ArxivQueryRun(),
@@ -38,15 +38,3 @@ def init_built_in_tools() -> list[BaseTool]:
         pass
 
     return tools
-
-
-# # Dynamically append all @tool functions in the current module
-# TOOLS = [obj for _, obj in inspect.getmembers(sys.modules[__name__]) if isinstance(obj, BaseTool)]
-
-
-# # Dynamically mapping tool names to their descriptions (docstrings)
-# TOOLS_INFO = [
-#     {"tool_name": obj.name, "tool_description": obj.description}
-#     for _, obj in inspect.getmembers(sys.modules[__name__])
-#     if isinstance(obj, BaseTool)
-# ]
