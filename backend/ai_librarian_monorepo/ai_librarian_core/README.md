@@ -256,8 +256,7 @@ asyncio.run(stream_async_agent())
 ```
 
 ## TODO
-
-1. Deep search agent implementation.
-2. MCP (Multi-hop Reasoning) support.
-3. Tool for searching resources on the National Library of Public Information (國立公共資訊圖書館).
-4. Simplify the import paths of this package (write proper init file).
+1. Simplify the import paths of this package (write proper init file).
+2. Implement tool for searching resources on the National Library of Public Information (國立公共資訊圖書館).
+3. Implement Deep search agent.
+4. Implement MCP support.
