@@ -7,7 +7,7 @@ from ai_librarian_core.models.used_tool import UsedTool
 from ai_librarian_core.utils.utils import get_thread_id
 from langchain.chat_models import init_chat_model
 from langchain_core.language_models.chat_models import BaseChatModel
-from langchain_core.messages import AIMessage, AnyMessage, HumanMessage, SystemMessage
+from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
 from pydantic import BaseModel, Field
 
 
@@ -73,6 +73,17 @@ class OpenAIMessage(BaseModel):
         examples=["Hello, who are you?"],
     )
 
+    @classmethod
+    def from_langchain_message(cls, message: BaseMessage) -> OpenAIMessage:
+        if isinstance(message, SystemMessage):
+            return cls(role=Role.SYSTEM, content=message.content)
+        elif isinstance(message, AIMessage):
+            return cls(role=Role.ASSISTANT, content=message.content)
+        elif isinstance(message, HumanMessage):
+            return cls(role=Role.USER, content=message.content)
+        else:
+            raise ValueError(f"Unknown message type: {type(message)}")
+
 
 class AegntRequest(BaseModel):
     """Chat request schema defining the structure of incoming chat API requests.
@@ -99,7 +110,7 @@ class AegntRequest(BaseModel):
         description="Configuration settings for the Large Language Model processing the request. Controls model selection and generation parameters.",
     )
 
-    def get_langchain_messages(self) -> list[AnyMessage]:
+    def get_langchain_messages(self) -> list[BaseMessage]:
         langchain_messages = []
         for openai_message in self.messages:
             if openai_message.role == Role.SYSTEM:
