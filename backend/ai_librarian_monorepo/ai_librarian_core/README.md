@@ -67,6 +67,7 @@ The `get_built_in_tools()` function automatically initializes and loads all avai
 
 ```python
 import os
+from langchain_core.tools import BaseTool
 from ai_librarian_core.tools.tools import get_built_in_tools
 
 # Example: Set environment variables (replace with your actual keys)
@@ -75,7 +76,7 @@ os.environ["GOOGLE_API_KEY"] = "your_google_api_key"
 os.environ["GOOGLE_CSE_ID"] = "your_google_cse_id"
 os.environ["OPENWEATHERMAP_API_KEY"] = "your_openweathermap_api_key"
 
-tools = get_built_in_tools()
+tools: list[BaseTool] = get_built_in_tools()
 # tools will contain initialized instances of BaseTool subclasses
 ```
 
