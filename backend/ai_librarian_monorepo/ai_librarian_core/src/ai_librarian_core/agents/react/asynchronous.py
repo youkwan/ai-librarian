@@ -92,3 +92,6 @@ class AsyncReactAgent(BaseReactAgent):
             stream_mode="messages",
             config={"configurable": {"thread_id": thread_id or get_thread_id()}},
         )
+
+    def plot(self) -> str:
+        return self.workflow.get_graph().draw_mermaid()
