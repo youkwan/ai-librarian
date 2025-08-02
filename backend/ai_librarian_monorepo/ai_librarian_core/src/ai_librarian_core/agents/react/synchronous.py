@@ -83,7 +83,7 @@ class ReactAgent(BaseReactAgent):
 
     def stream(
         self, messages: list[BaseMessage], thread_id: str | None = None, llm_config: LLMConfig = LLMConfig()
-    ) -> Iterator[dict[str, list[BaseMessage]]]:
+    ) -> Iterator[tuple[BaseMessage, dict[str, str]]]:
         state = MessagesState(messages=messages, llm_config=llm_config)
         return self.workflow.stream(
             state,

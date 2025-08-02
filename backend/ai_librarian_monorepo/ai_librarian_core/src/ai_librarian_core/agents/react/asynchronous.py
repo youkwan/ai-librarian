@@ -85,7 +85,7 @@ class AsyncReactAgent(BaseReactAgent):
 
     async def stream(
         self, messages: list[BaseMessage], thread_id: str | None = None, llm_config: LLMConfig = LLMConfig()
-    ) -> AsyncIterator[dict[str, list[BaseMessage]]]:
+    ) -> AsyncIterator[tuple[BaseMessage, dict[str, str]]]:
         state = MessagesState(messages=messages, llm_config=llm_config)
         return self.workflow.astream(
             state,
