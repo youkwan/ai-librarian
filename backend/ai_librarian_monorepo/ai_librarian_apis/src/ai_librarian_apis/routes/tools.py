@@ -1,14 +1,14 @@
 from ai_librarian_apis.core.logger import logger
 from ai_librarian_apis.deps import get_tools
-from ai_librarian_apis.schemas.error import BaseError
+from ai_librarian_apis.schemas.error import ErrorResponse
 from ai_librarian_apis.schemas.tools import ToolArg, ToolInfo, ToolListResponse, ToolRunRequest, ToolRunResponse
 from fastapi import APIRouter, Depends, HTTPException
 from langchain_core.tools import BaseTool
 
-tools_router = APIRouter(prefix="/tools", tags=["tools"])
+tools_router = APIRouter(prefix="/tools", tags=["Tools"])
 
 
-@tools_router.get("", responses={500: {"model": BaseError}})
+@tools_router.get("", responses={500: {"model": ErrorResponse}})
 def list_tools(tools: list[BaseTool] = Depends(get_tools)) -> ToolListResponse:
     """Provides a list of tools that the agent can potentially use during its
     execution to perform actions or retrieve information.
@@ -48,8 +48,8 @@ def list_tools(tools: list[BaseTool] = Depends(get_tools)) -> ToolListResponse:
 @tools_router.post(
     "/run",
     responses={
-        404: {"model": BaseError, "description": "Tool not found."},
-        500: {"model": BaseError},
+        404: {"model": ErrorResponse, "description": "Tool not found."},
+        500: {"model": ErrorResponse},
     },
 )
 async def run_tool(request: ToolRunRequest, tools: list[BaseTool] = Depends(get_tools)):

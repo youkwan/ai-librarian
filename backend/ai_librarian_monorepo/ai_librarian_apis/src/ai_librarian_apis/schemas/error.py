@@ -1,9 +1,9 @@
 from pydantic import BaseModel, Field
 
 
-class BaseError(BaseModel):
+class ErrorResponse(BaseModel):
     detail: str | None = Field(
-        description="The message of the error.",
+        description="Detailed information about the error.",
         default="Internal server error.",
         examples=["Internal server error."],
     )
