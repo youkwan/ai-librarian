@@ -1,12 +1,12 @@
+from ai_librarian_apis.schemas.schemas import HealthResponse
 from fastapi import APIRouter
-from schemas import HealthResponse
 
 sys_router = APIRouter(prefix="/sys", tags=["sys"])
 
 
 @sys_router.get("/health", summary="Health Check")
 def health() -> HealthResponse:
-    """Provides a simple health check endpoint to verify that the API service
+    """A simple health check endpoint to verify that the API service
     is running and responsive.
     """
     return HealthResponse(status="ok")
