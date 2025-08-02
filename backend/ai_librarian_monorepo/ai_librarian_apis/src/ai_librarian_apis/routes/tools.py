@@ -8,7 +8,7 @@ from langchain_core.tools import BaseTool
 tools_router = APIRouter(prefix="/tools", tags=["tools"])
 
 
-@tools_router.get("/list", responses={500: {"model": BaseError}})
+@tools_router.get("", responses={500: {"model": BaseError}})
 def list_tools(tools: list[BaseTool] = Depends(get_tools)) -> ToolListResponse:
     """Provides a list of tools that the agent can potentially use during its
     execution to perform actions or retrieve information.

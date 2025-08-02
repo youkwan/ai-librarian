@@ -8,7 +8,7 @@ from fastapi.responses import RedirectResponse
 from ai_librarian_apis.core.cors import setup_cors
 from ai_librarian_apis.core.lifespan import lifespan
 from ai_librarian_apis.core.settings import settings
-from ai_librarian_apis.routes.sys import sys_router
+from ai_librarian_apis.routes.system import system_router
 from ai_librarian_apis.routes.tools import tools_router
 
 
@@ -18,7 +18,7 @@ def create_app() -> FastAPI:
     app = FastAPI(title="AI Librarian APIs", version=__version__, lifespan=lifespan)
     setup_cors(app)
 
-    app.include_router(sys_router, prefix="/v1")
+    app.include_router(system_router, prefix="/v1")
     app.include_router(tools_router, prefix="/v1")
     # app.include_router(agents_router, prefix="/v1")
 
