@@ -1,17 +1,14 @@
 from collections.abc import AsyncGenerator
 
-from agent_core.graphs import in_memory_react_graph as react_graph
-from agent_core.models.llmconfig import Model
-from agent_core.tools.tools import TOOLS_INFO
-from fastapi import APIRouter, HTTPException, status
-from fastapi.responses import StreamingResponse
-from schemas import (
+from ai_librarian_apis.schemas.schemas import (
     AegntRequest,
     AgentResponse,
     ModelResponse,
-    ToolResponse,
 )
-from backend.ai_librarian_monorepo.ai_librarian_apis.utils.utils import format_sse
+from ai_librarian_apis.utils import format_sse
+from ai_librarian_core.models.llm_config import Model
+from fastapi import APIRouter, HTTPException, status
+from fastapi.responses import StreamingResponse
 
 agents_router = APIRouter(prefix="/agents", tags=["agents"])
 
@@ -22,14 +19,6 @@ def get_models() -> ModelResponse:
     and available for use with the agent endpoints (`/invoke` and `/stream`).
     """
     return ModelResponse(models=list(Model))
-
-
-@agents_router.get("/tools", summary="list all available tools")
-def get_tools() -> ToolResponse:
-    """Provides a list of tools that the agent can potentially use during its
-    execution to perform actions or retrieve information.
-    """
-    return ToolResponse(tools=TOOLS_INFO)
 
 
 @agents_router.post("/invoke", summary="invoke the agent")
