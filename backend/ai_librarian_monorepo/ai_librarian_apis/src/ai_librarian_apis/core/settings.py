@@ -29,7 +29,8 @@ class Settings(BaseSettings):
 
     # Langsmith settings
     langsmith_tracing: Literal["false", "true"] = (
-        "false"  # Define as Literal instead of bool to avoid langsmith's parsing issues
+        "false"  # Define as Literal instead of bool to avoid langsmith's parsing issues.
+        # TODO(youkwan): Test if this is still needed.
     )
     langsmith_api_key: str | None = None
     langsmith_project: str | None = None
