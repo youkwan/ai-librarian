@@ -3,7 +3,6 @@ from importlib import metadata
 import uvicorn
 from dotenv import load_dotenv
 from fastapi import FastAPI
-from fastapi.responses import RedirectResponse
 
 from ai_librarian_apis.core.cors import setup_cors
 from ai_librarian_apis.core.lifespan import lifespan
@@ -19,14 +18,9 @@ def create_app() -> FastAPI:
     app = FastAPI(title="AI Librarian APIs", version=__version__, lifespan=lifespan)
     setup_cors(app)
 
-    app.include_router(system_router, prefix="/v1")
+    app.include_router(system_router)
     app.include_router(tools_router, prefix="/v1")
     app.include_router(react_router, prefix="/v1")
-
-    @app.get("/", include_in_schema=False)
-    async def redirect_root() -> RedirectResponse:
-        return RedirectResponse(url="/redoc")
-
     return app
 
 

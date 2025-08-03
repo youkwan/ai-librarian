@@ -9,4 +9,5 @@ class HealthResponse(BaseModel):
     status: str = Field(
         default="ok",
         description="API operational status indicator. Returns 'ok' when the system is functioning properly.",
+        examples=["ok"],
     )
