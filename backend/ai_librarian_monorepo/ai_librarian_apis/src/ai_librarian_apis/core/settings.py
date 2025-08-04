@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     )
 
     # API settings
-    debug: bool = False
+    # debug: bool = False
     host: str = "0.0.0.0"
     port: int = 8000
     allowed_origins: list[str] | None = Field(default_factory=list)
@@ -37,7 +37,6 @@ class Settings(BaseSettings):
     langsmith_endpoint: str = "https://api.smith.langchain.com"
 
     # Tools credentials
-    google_api_key: str | None = None
     google_cse_id: str | None = None
     openweathermap_api_key: str | None = None
 
