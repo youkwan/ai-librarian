@@ -76,12 +76,12 @@ class LLMConfig(BaseModel):
         le=2,
     )
     max_tokens: int | None = Field(
-        default=None,
+        default=2000,
         description=(
             "Maximum number of tokens (words/word pieces) to generate in the response. "
             "None means no specific limit beyond model's context length."
         ),
-        examples=[None],
+        examples=[2000],
     )
 
     model_config = ConfigDict(frozen=True)
