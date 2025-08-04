@@ -61,7 +61,9 @@ async def run_tool(request: ToolRunRequest, tools: list[BaseTool] = Depends(get_
         tool_input = request.args
         tool_input_dict = {arg.name: arg.value for arg in tool_input}
         return ToolRunResponse(
-            tool_name=request.tool_name, args=request.args, output=selected_tool.run(tool_input_dict)
+            tool_name=request.tool_name,
+            args=request.args,
+            output=await selected_tool.ainvoke(tool_input_dict),
         )
     except Exception as e:
         logger.error(f"Error running tool: {e}")
