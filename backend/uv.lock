@@ -40,7 +40,7 @@ dev = [
 
 [[package]]
 name = "ai-librarian-apis"
-version = "0.1.1"
+version = "0.1.2"
 source = { editable = "ai_librarian_monorepo/ai_librarian_apis" }
 dependencies = [
     { name = "ai-librarian-core" },
