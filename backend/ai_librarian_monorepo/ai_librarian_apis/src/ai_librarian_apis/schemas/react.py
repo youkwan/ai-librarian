@@ -4,11 +4,20 @@ from enum import Enum
 
 from ai_librarian_core.models.llm_config import LLMConfig, Model
 from ai_librarian_core.models.used_tool import UsedTool
-from ai_librarian_core.utils.utils import get_thread_id
+from ai_librarian_core.utils.uuid import get_thread_id
 from langchain.chat_models import init_chat_model
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
 from pydantic import BaseModel, Field
+
+
+class FlowchartResponse(BaseModel):
+    """Flowchart response schema. Returns the flowchart of the ReAct Agent."""
+
+    mermaid: str = Field(
+        ...,
+        description="The flowchart of the ReAct Agent.",
+    )
 
 
 class ModelResponse(BaseModel):
@@ -64,12 +73,17 @@ class OpenAIMessage(BaseModel):
 
     role: Role = Field(
         ...,
-        description="The role of the message sender (system, user, or assistant). Determines how the message is processed and displayed.",
+        description=(
+            "The role of the message sender (system, user, or assistant). "
+            "Determines how the message is processed and displayed."
+        ),
         examples=[Role.ASSISTANT],
     )
     content: str = Field(
         ...,
-        description="The actual message content or prompt text. Contains the information being exchanged in the conversation.",
+        description=(
+            "The actual message content or prompt text. Contains the information being exchanged in the conversation."
+        ),
         examples=["Hello, who are you?"],
     )
 
@@ -85,7 +99,7 @@ class OpenAIMessage(BaseModel):
             raise ValueError(f"Unknown message type: {type(message)}")
 
 
-class AegntRequest(BaseModel):
+class AgentRequest(BaseModel):
     """Chat request schema defining the structure of incoming chat API requests.
     Contains all parameters needed to process a conversation with the Agent.
     """
@@ -93,21 +107,31 @@ class AegntRequest(BaseModel):
     thread_id: str = Field(
         default_factory=get_thread_id,
         examples=["thread-ab586827-8c7c-4bf9-a6c9-fea58f43f5fc"],
-        description="Unique identifier to track and maintain conversation state. If provided, the existing conversation will be continued. If not provided, a new conversation thread will be created automatically.",
+        description=(
+            "Unique identifier to track and maintain conversation state. "
+            "If provided, the existing conversation will be continued. "
+            "If not provided, a new conversation thread will be created automatically."
+        ),
     )
     messages: list[OpenAIMessage] = Field(
         default_factory=list,
-        description="Array of conversation messages between user, assistant and system used to generate a contextual response. Can include multiple sequential messages to maintain conversation history.",
+        description=(
+            "Array of conversation messages between user, assistant and system used to generate a contextual response. "
+            "Can include multiple sequential messages to maintain conversation history."
+        ),
         examples=[
             [
                 {"role": "system", "content": "You are a helpful assistant."},
-                {"role": "user", "content": "Tell me about the weather in Tokyo."},
+                {"role": "user", "content": "What is the temperature in Taipei today?"},
             ]
         ],
     )
     llm_config: LLMConfig = Field(
         default_factory=LLMConfig,
-        description="Configuration settings for the Large Language Model processing the request. Controls model selection and generation parameters.",
+        description=(
+            "Configuration settings for the Large Language Model processing the request. "
+            "Controls model selection and generation parameters."
+        ),
     )
 
     def get_langchain_messages(self) -> list[BaseMessage]:
@@ -135,17 +159,26 @@ class AgentResponse(BaseModel):
 
     thread_id: str = Field(
         ...,
-        description="Unique identifier of the conversation thread. Can be supplied in subsequent requests to continue this conversation context.",
+        description=(
+            "Unique identifier of the conversation thread. "
+            "Can be supplied in subsequent requests to continue this conversation context."
+        ),
         examples=[get_thread_id()],
     )
     llm_config: LLMConfig = Field(
         ...,
-        description="Configuration settings for the Large Language Model processing the request. Controls model selection and generation parameters.",
+        description=(
+            "Configuration settings for the Large Language Model processing the request. "
+            "Controls model selection and generation parameters."
+        ),
         examples=[LLMConfig()],
     )
     messages: list[OpenAIMessage] = Field(
         ...,
-        description="Array of messages generated by the LLM in response to the request. Usually contains one assistant response message.",
+        description=(
+            "Array of messages generated by the LLM in response to the request. "
+            "Usually contains one assistant response message."
+        ),
         examples=[
             [
                 {
@@ -157,7 +190,10 @@ class AgentResponse(BaseModel):
     )
     used_tools: list[UsedTool] = Field(
         default_factory=list,
-        description="Array of external tools or APIs that were called by the Agent during response generation. Empty if no tools were used.",
+        description=(
+            "Array of external tools or APIs that were called by the Agent during response generation. "
+            "Empty if no tools were used."
+        ),
         examples=[
             [
                 UsedTool(name="get_temperature", output="The temperature in Tokyo is 20°C"),
