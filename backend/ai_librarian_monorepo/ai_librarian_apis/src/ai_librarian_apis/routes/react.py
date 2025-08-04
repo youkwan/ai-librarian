@@ -1,5 +1,6 @@
 from ai_librarian_apis.core.global_vars import react_agent
 from ai_librarian_apis.core.logger import logger
+from ai_librarian_apis.schemas.error import ErrorResponse
 from ai_librarian_apis.schemas.react import AgentRequest, AgentResponse, FlowchartResponse, ModelResponse, OpenAIMessage
 from ai_librarian_apis.schemas.sse import EventPayload, LLMChunkPayload, SSEEvent, ToolPayload
 from ai_librarian_apis.utils.sse_example import get_sse_response_example
@@ -12,20 +13,40 @@ from langchain_core.messages import AIMessage, ToolMessage
 react_router = APIRouter(prefix="/react", tags=["ReAct Agent"])
 
 
-@react_router.get("/models", summary="List all available models")
+@react_router.get(
+    "/models",
+    description=(
+        "Retrieves a list of the LLMs currently configured and available "
+        "for use with the agent endpoints (`/run` and `/stream`)."
+    ),
+    summary="List all available models",
+    responses={500: {"model": ErrorResponse}},
+)
 def get_models() -> ModelResponse:
-    """Retrieves a list of the LLMs currently configured
-    and available for use with the agent endpoints (`/invoke` and `/stream`).
-    """
     return ModelResponse(models=list(Model))
 
 
-@react_router.get("/flowchart", summary="Get the flowchart of the ReAct Agent in Mermaid format")
+@react_router.get(
+    "/flowchart",
+    description="Retrieves the flowchart of the ReAct Agent in Mermaid format.",
+    summary="Retrieve the flowchart of the Agent",
+    responses={500: {"model": ErrorResponse}},
+)
 def get_flowchart() -> FlowchartResponse:
     return FlowchartResponse(mermaid=react_agent.plot())
 
 
-@react_router.post("/run", summary="Run the ReAct Agent")
+@react_router.post(
+    "/run",
+    description=(
+        "Runs the ReAct Agent with the given request. "
+        "The request should be a list of OpenAI style messages between user, assistant and system. "
+        "A thread id can be provided to continue a conversation on a specific thread. "
+        "If not provided, a new conversation thread will be created automatically."
+    ),
+    summary="Run the ReAct Agent",
+    responses={500: {"model": ErrorResponse}},
+)
 async def run_react_agent(request: AgentRequest) -> AgentResponse:
     message, used_tools = await react_agent.run(
         request.get_langchain_messages(),
@@ -98,7 +119,13 @@ def _process_ai_message(
 
 @react_router.post(
     "/stream",
-    summary="Stream the ReAct Agent's response",
+    description=(
+        "Streams the ReAct Agent's response. "
+        "The request should be a list of OpenAI style messages between user, assistant and system. "
+        "A thread id can be provided to continue a conversation on a specific thread. "
+        "If not provided, a new conversation thread will be created automatically."
+    ),
+    summary="Stream the ReAct Agent",
     responses={
         200: {
             "content": {
@@ -112,7 +139,8 @@ def _process_ai_message(
                 }
             },
             "description": "Stream data using Server-Sent Events.",
-        }
+        },
+        500: {"model": ErrorResponse},
     },
 )
 async def stream_react_agent(agent_request: AgentRequest, request: Request):
