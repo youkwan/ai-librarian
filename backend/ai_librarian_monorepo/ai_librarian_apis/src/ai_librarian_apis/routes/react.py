@@ -1,7 +1,13 @@
 from ai_librarian_apis.core.global_vars import react_agent
-from ai_librarian_apis.schemas.react import AegntRequest, AgentResponse, ModelResponse, OpenAIMessage
+from ai_librarian_apis.core.logger import logger
+from ai_librarian_apis.schemas.react import AgentRequest, AgentResponse, FlowchartResponse, ModelResponse, OpenAIMessage
+from ai_librarian_apis.schemas.sse import EventPayload, LLMChunkPayload, SSEEvent, ToolPayload
+from ai_librarian_apis.schemas.sse_example import get_sse_response_example
 from ai_librarian_core.models.llm_config import Model
-from fastapi import APIRouter
+from ai_librarian_core.models.used_tool import UsedTool
+from fastapi import APIRouter, Request
+from fastapi.responses import StreamingResponse
+from langchain_core.messages import AIMessage, ToolMessage
 
 react_router = APIRouter(prefix="/react", tags=["ReAct Agent"])
 
@@ -14,8 +20,13 @@ def get_models() -> ModelResponse:
     return ModelResponse(models=list(Model))
 
 
+@react_router.get("/flowchart", summary="Get the flowchart of the ReAct Agent in Mermaid format")
+def get_flowchart() -> FlowchartResponse:
+    return FlowchartResponse(mermaid=react_agent.plot())
+
+
 @react_router.post("/run", summary="Run the ReAct Agent")
-async def run_react_agent(request: AegntRequest) -> AgentResponse:
+async def run_react_agent(request: AgentRequest) -> AgentResponse:
     message, used_tools = await react_agent.run(
         request.get_langchain_messages(),
         thread_id=request.thread_id,
@@ -29,156 +40,108 @@ async def run_react_agent(request: AegntRequest) -> AgentResponse:
     )
 
 
-# async def run_react_agent(request: AegntRequest) -> AgentResponse:
-#     """Processes the request by invoking the agent synchronously and returns the final
-#     response once the agent execution is complete. This endpoint is suitable for
-#     applications where real-time feedback is not required, and only the final result is needed.
-
-#     **Conversation Management:**
-#     - **Continuing a Conversation:** To continue an existing conversation, provide the *same* `thread_id` in your request. You only need to include the *new* user message(s) in the `messages` array. The backend automatically retrieves and appends to the existing conversation history associated with that `thread_id`.
-#     - **Starting a New Conversation:** To start a new conversation, either:
-#         - Provide a *new, unique* `thread_id`.
-#         - Omit the `thread_id` field entirely. The backend will generate a new unique `thread_id` for the conversation.
-#     """
-#     try:
-#         response = await react_graph.ainvoke(
-#             input={
-#                 "messages": request.get_langchain_messages(),
-#                 "llm_config": request.llm_config.model_dump(),
-#             },
-#             config=request.get_runnable_config(),
-#         )
-
-#         return AgentResponse(
-#             {
-#                 "thread_id": request.thread_id,
-#                 "llm_config": request.llm_config,
-#                 "messages": [
-#                     {
-#                         "role": "assistant",
-#                         "content": response["messages"][-1].content,
-#                     }
-#                 ],
-#                 "used_tools": response["used_tools"],
-#             }
-#         )
-#     except Exception as e:
-#         raise HTTPException(
-#             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-#             detail=f"Agent execution failed: {str(e)}",
-#         )
+def _process_tool_message(message: ToolMessage, thread_id: str, llm_config: dict) -> str:
+    return SSEEvent(
+        event=EventPayload.TOOL_OUTPUT,
+        data=ToolPayload(
+            thread_id=thread_id, llm_config=llm_config, used_tools=UsedTool(name=message.name, output=message.content)
+        ),
+    ).to_sse_format()
 
 
-# async def stream_tokens(request: AegntRequest) -> AsyncGenerator[str]:
-#     try:
-#         is_stream_started = False
-#         in_llm_phase = False
-#         llm_tokens = []
-
-#         def create_sse_event(event_type: str, additional_data: dict | None = None) -> str:
-#             base_data = {
-#                 "type": event_type,
-#                 "thread_id": request.thread_id,
-#                 "llm_config": request.llm_config.model_dump(),
-#             }
-#             if additional_data:
-#                 return format_sse(event_type, base_data | additional_data)
-#             else:
-#                 return format_sse(event_type, base_data)
-
-#         async for event in react_graph.astream(
-#             input={
-#                 "messages": request.get_langchain_messages(),
-#                 "llm_config": request.llm_config.model_dump(),
-#             },
-#             config=request.get_runnable_config(),
-#             stream_mode=["messages", "custom"],
-#         ):
-#             event_type = event[0]
-
-#             if not is_stream_started:
-#                 is_stream_started = True
-#                 yield create_sse_event("stream.start")
-
-#             if event_type == "messages":
-#                 ai_message_chunk = event[1][0]
-
-#                 if ai_message_chunk.response_metadata.get("finish_reason") == "stop":
-#                     all_llm_tokens = "".join(llm_tokens)
-#                     yield create_sse_event(
-#                         "stream.llm_tokens.completed",
-#                         {"llm_tokens": all_llm_tokens},
-#                     )
-#                     in_llm_phase = False
-#                 elif ai_message_chunk.content:
-#                     if not in_llm_phase:
-#                         in_llm_phase = True
-#                         llm_tokens = []
-#                         yield create_sse_event("stream.llm_tokens.start")
-
-#                     llm_tokens.append(ai_message_chunk.content)
-#                     yield create_sse_event(
-#                         "stream.llm_tokens.delta",
-#                         {"llm_tokens": ai_message_chunk.content},
-#                     )
-#             elif event_type == "custom":
-#                 if in_llm_phase:
-#                     in_llm_phase = False
-
-#                 event_data = event[1]
-#                 tool_type = event_data.get("type")
-#                 tool_name = event_data.get("tool_name")
-#                 metadata = event_data.get("metadata")
-#                 tool_tokens = event_data.get("tool_tokens")
-
-#                 if tool_type == "start":
-#                     yield create_sse_event("stream.tool_call.start", event_data)
-#                 elif tool_type == "delta":
-#                     yield create_sse_event("stream.tool_call.delta", event_data)
-#                 elif tool_type == "completed":
-#                     yield create_sse_event("stream.tool_call.completed", event_data)
-
-#         if is_stream_started:
-#             yield create_sse_event("stream.completed")
-
-#     except Exception as e:
-#         yield format_sse("stream.error", {"error": str(e)})
+def _process_ai_message(
+    message: AIMessage, thread_id: str, llm_config: dict, has_llm_started: bool
+) -> tuple[str, bool] | None:
+    if message.tool_calls and (tool_name := message.tool_calls[0].get("name")):
+        event = SSEEvent(
+            event=EventPayload.TOOL_CHOSEN,
+            data=ToolPayload(
+                thread_id=thread_id,
+                llm_config=llm_config,
+                used_tools=UsedTool(name=tool_name, output=message.content),
+            ),
+        )
+        return event.to_sse_format(), has_llm_started
+    elif message.content:
+        if has_llm_started:
+            event = SSEEvent(
+                event=EventPayload.LLM_DELTA,
+                data=LLMChunkPayload(
+                    thread_id=thread_id,
+                    llm_config=llm_config,
+                    message_chunk=message.content,
+                ),
+            )
+            return event.to_sse_format(), True
+        else:
+            event = SSEEvent(
+                event=EventPayload.LLM_START,
+                data=LLMChunkPayload(
+                    thread_id=thread_id,
+                    llm_config=llm_config,
+                    message_chunk=message.content,
+                ),
+            )
+            return event.to_sse_format(), True
+    elif message.response_metadata.get("finish_reason") == "stop":
+        event = SSEEvent(
+            event=EventPayload.LLM_END,
+            data=LLMChunkPayload(
+                thread_id=thread_id,
+                llm_config=llm_config,
+                message_chunk=message.content,
+            ),
+        )
+        return event.to_sse_format(), False
+    return None
 
 
-# @agents_router.post("/stream", summary="stream the agent")
-# async def stream_react_agent(request: AegntRequest):
-#     """Initiates a streaming connection to the agent based on the provided request parameters.
-#     This endpoint uses Server-Sent Events (SSE) to push updates from the agent's execution
-#     process in real-time. It's suitable for applications requiring immediate feedback or
-#     observing the agent's thought process, including LLM token generation and tool call results.
+@react_router.post(
+    "/stream",
+    summary="Stream the ReAct Agent's response",
+    responses={
+        200: {
+            "content": {
+                "text/event-stream": {
+                    "schema": {
+                        "type": "string",
+                        "format": "binary",
+                        "description": "A stream of server-sent events (SSE).",
+                    },
+                    "examples": {"example1": {"summary": "Example SSE stream", "value": get_sse_response_example()}},
+                }
+            },
+            "description": "Stream data using Server-Sent Events.",
+        }
+    },
+)
+async def stream_react_agent(agent_request: AgentRequest, request: Request):
+    # TODO(youkwan): Add heartbeat.
+    async def stream_chunk():
+        has_llm_started = False
+        stream = await react_agent.stream(
+            agent_request.get_langchain_messages(),
+            thread_id=agent_request.thread_id,
+            llm_config=agent_request.llm_config,
+        )
+        async for chunk in stream:
+            if await request.is_disconnected():
+                logger.info("Client disconnected.")
+                break
 
-#     **Conversation Management:**
-#     - **Continuing a Conversation:** To continue an existing conversation, provide the *same* `thread_id` in your request. You only need to include the *new* user message(s) in the `messages` array. The backend automatically retrieves and appends to the existing conversation history associated with that `thread_id`.
-#     - **Starting a New Conversation:** To start a new conversation, either:
-#         - Provide a *new, unique* `thread_id`.
-#         - Omit the `thread_id` field entirely. The backend will generate a new unique `thread_id` for the conversation.
+            message = chunk[0]
+            llm_config_dict = agent_request.llm_config.model_dump(mode="json")
 
-#     **Streaming Format:**
-#     The server pushes events formatted according to the SSE standard (`text/event-stream`).
-#     Each event has an `event` field indicating the type and a `data` field containing a JSON payload.
-#     Possible event types include:
-#     - `stream.start`: Indicates the stream has successfully started.
-#     - `stream.llm_tokens.start`: Signals the beginning of LLM token generation.
-#     - `stream.llm_tokens.delta`: Contains a chunk of newly generated LLM tokens.
-#     - `stream.llm_tokens.completed`: Signals the end of LLM token generation for a step, providing the full sequence.
-#     - `stream.tool_call.start`: Indicates a tool call is about to start. Contains tool name and input.
-#     - `stream.tool_call.delta`: Provides intermediate output or progress from a tool call (if the tool supports it).
-#     - `stream.tool_call.completed`: Signals the completion of a tool call. May contain the final output.
-#     - `stream.completed`: Indicates the entire agent execution process has finished successfully.
-#     - `stream.error`: Sent if an error occurs during the streaming process. Contains error details.
+            if isinstance(message, ToolMessage):
+                yield _process_tool_message(message, agent_request.thread_id, llm_config_dict)
+            elif isinstance(message, AIMessage):
+                result = _process_ai_message(message, agent_request.thread_id, llm_config_dict, has_llm_started)
+                if result:
+                    event_str, has_llm_started = result
+                    yield event_str
 
-#     **Important Usage Note:**
-#     Standard OpenAPI documentation interfaces like Swagger UI typically **cannot** directly interact
-#     with or test SSE endpoints. To consume this stream, you must use a client library or tool
-#     that supports Server-Sent Events (e.g., `EventSource` in JavaScript, `httpx` in Python, Postman).
-#     """
-#     return StreamingResponse(
-#         stream_tokens(request),
-#         media_type="text/event-stream",
-#         headers={"Cache-Control": "no-cache"},
-#     )
+    return StreamingResponse(
+        stream_chunk(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache"},
+    )
