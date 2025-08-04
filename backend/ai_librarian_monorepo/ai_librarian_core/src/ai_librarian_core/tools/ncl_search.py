@@ -1,35 +1,50 @@
-from ai_librarian_core.wrapper.ncl_crawler import NCLCrawler
-from langchain_core.callbacks import CallbackManagerForToolRun
+from ai_librarian_core.wrapper.ncl_search import AsyncNCLSearch, NCLSearch
+from langchain_core.callbacks import AsyncCallbackManagerForToolRun, CallbackManagerForToolRun
 from langchain_core.tools import BaseTool
-from pydantic import Field
+from pydantic import BaseModel, Field
 
 
-class NCLCrawlerToolRun(BaseTool):
+class NCLSearchInput(BaseModel):
+    """The input of the NCLSearch tool."""
+
+    query: str = Field(description="The query to search the NCL catalog.")
+
+
+class NCLSearchRun(BaseTool):
     """A tool for searching the Taiwan National Central Library(NCL, 國家圖書館) catalog.
 
     This tool allows searching books in the NCL catalog by keywords. It returns a formatted
     string containing book information including title, author and link.
 
     Example:
-        >>> ncl_crawler_tool = NCLCrawlerToolRun()
-        >>> result = ncl_crawler_tool.invoke({"query": "Artificial Intelligence"})
+        >>> ncl_search_tool = NCLSearchRun()
+        >>> result = ncl_search_tool.invoke({"query": "Artificial Intelligence"})
         >>> print(result)
         1. Artificial Intelligence: A Modern Approach (Stuart Russell) - https://aleweb.ncl.edu.tw/F/...
         2. Artificial Intelligence and Deep Learning (Ian Goodfellow) - https://aleweb.ncl.edu.tw/F/...
         ...
     """
 
-    name: str = "NCLCrawler"
+    name: str = "ncl_search"
     description: str = (
         "A tool for searching the Taiwan National Central Library(NCL, 國家圖書館) catalog."
         "The search results are returned in a string, containing the title, author, and link of the book."
         "The title and author are returned in the same language as the query, and the link is the URL of the book."
     )
-    ncl_crawler: NCLCrawler = Field(default_factory=NCLCrawler)
+    ncl_search: NCLSearch = Field(default_factory=NCLSearch)
+    async_ncl_search: AsyncNCLSearch = Field(default_factory=AsyncNCLSearch)
+    args_schema: type[BaseModel] = NCLSearchInput
 
     def _run(
         self,
         query: str,
         run_manager: CallbackManagerForToolRun | None = None,
     ) -> str:
-        return self.ncl_crawler.run(query)
+        return self.ncl_search.run(query)
+
+    async def _arun(
+        self,
+        query: str,
+        run_manager: AsyncCallbackManagerForToolRun | None = None,
+    ) -> str:
+        return await self.async_ncl_search.arun(query)

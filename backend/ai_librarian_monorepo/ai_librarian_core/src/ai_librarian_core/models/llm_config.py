@@ -14,40 +14,29 @@ class Model(StrEnum):
     """
 
     # OpenAI
-    GPT_4O_MINI = "openai:gpt-4o-mini"  # First model will be the default in ReDoc
-    GPT_4O = "openai:gpt-4o"
-    GPT_4_5_PREVIEW = "openai:gpt-4.5-preview"
-    O3_MINI = "openai:o3-mini"
-    O1_MINI = "openai:o1-mini"
-    O1 = "openai:o1"
+    OPENAI_GPT_4O_MINI = "openai:gpt-4o-mini"  # First model will be the default in ReDoc
+    OPENAI_GPT_4O = "openai:gpt-4o"
+    OPENAI_GPT_O4_MINI = "openai:o4-mini"
+    OPENAI_GPT_4_1 = "openai:gpt-4.1"
+    OPENAI_GPT_4_1_MINI = "openai:gpt-4.1-mini"
+    OPENAI_GPT_4_1_NANO = "openai:gpt-4.1-nano"
+    OPENAI_O3_MINI = "openai:o3-mini"
+    OPENAI_O1 = "openai:o1"
 
     # Anthropic
-    CLAUDE_3_7_SONNET = "anthropic:claude-3-7-sonnet-latest"
-    CLAUDE_3_5_HAIKU = "anthropic:claude-3-5-haiku-latest"
-    CLAUDE_3_5_SONNET_V2 = "anthropic:claude-3-5-sonnet-latest"
-    CLAUDE_3_5_SONNET = "anthropic:claude-3-5-sonnet-20240620"
+    ANTHROPIC_CLAUDE_3_7_SONNET = "anthropic:claude-3-7-sonnet-latest"
+    ANTHROPIC_CLAUDE_3_5_HAIKU = "anthropic:claude-3-5-haiku-latest"
+    ANTHROPIC_CLAUDE_3_5_SONNET_V2 = "anthropic:claude-3-5-sonnet-latest"
+    ANTHROPIC_CLAUDE_3_5_SONNET = "anthropic:claude-3-5-sonnet-20240620"
 
     # Google GenAI
-    GEMINI_2_5_PRO_EXP_03_25 = "google_genai:gemini-2.5-pro-exp-03-25"
-    GEMINI_2_0_FLASH = "google_genai:gemini-2.0-flash"
-    GEMINI_2_0_FLASH_LITE = "google_genai:gemini-2.0-flash-lite"
-    GEMINI_1_5_FLASH = "google_genai:gemini-1.5-flash"
-    GEMINI_1_5_FLASH_8B = "google_genai:gemini-1.5-flash-8b"
-    GEMINI_1_5_PRO = "google_genai:gemini-1.5-pro"
+    GEMINI_2_5_PRO = "google_genai:gemini-2.5-pro"
+    GEMINI_2_5_FLASH = "google_genai:gemini-2.5-flash"
+    GEMINI_2_5_FLASH_LITE = "google_genai:gemini-2.5-flash-lite"
 
     # Groq
-    LLAMA_4_SCOUT_17B_16E_INSTRUCT = "groq:meta-llama/llama-4-scout-17b-16e-instruct"
     LLAMA_3_3_70B_VERSATILE = "groq:llama-3.3-70b-versatile"
-    LLAMA_3_3_70B_SPECDEC = "groq:llama-3.3-70b-specdec"
-    LLAMA_3_2_1B_PREVIEW = "groq:llama-3.2-1b-preview"
-    LLAMA_3_2_3B_PREVIEW = "groq:llama-3.2-3b-preview"
     LLAMA_3_1_8B_INSTANT = "groq:llama-3.1-8b-instant"
-    MISTRAL_SABA_24B = "groq:mistral-saba-24b"
-    QWEN_QWQ_32B = "groq:qwen-qwq-32b"
-    QWEN_2_5_CODER_32B = "groq:qwen-2.5-coder-32b"
-    QWEN_2_5_32B = "groq:qwen-2.5-32b"
-    DEEPSEEK_R1_DISTILL_QWEN_32B = "groq:deepseek-r1-distill-qwen-32b"
-    DEEPSEEK_R1_DISTILL_LLAMA_70B = "groq:deepseek-r1-distill-llama-70b"
 
     @classmethod
     def list(cls) -> list[str]:
@@ -61,9 +50,9 @@ class LLMConfig(BaseModel):
     """
 
     model: Model = Field(
-        default=Model.GPT_4O_MINI,
+        default=Model.OPENAI_GPT_4O_MINI,
         description="The specific LLM model identifier to use for processing requests.",
-        examples=[Model.GPT_4O_MINI],
+        examples=[Model.OPENAI_GPT_4O_MINI],
     )
     temperature: float = Field(
         default=1,
@@ -76,12 +65,12 @@ class LLMConfig(BaseModel):
         le=2,
     )
     max_tokens: int | None = Field(
-        default=None,
+        default=2000,
         description=(
             "Maximum number of tokens (words/word pieces) to generate in the response. "
             "None means no specific limit beyond model's context length."
         ),
-        examples=[None],
+        examples=[2000],
     )
 
     model_config = ConfigDict(frozen=True)

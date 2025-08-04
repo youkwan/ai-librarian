@@ -4,9 +4,9 @@ from typing import Literal
 
 from ai_librarian_core.agents.react.base import BaseReactAgent, MissingAIMessageError, ReactAgentError
 from ai_librarian_core.agents.react.state import MessagesState
-from ai_librarian_core.agents.utils import get_thread_id
 from ai_librarian_core.models.llm_config import LLMConfig
 from ai_librarian_core.models.used_tool import UsedTool
+from ai_librarian_core.utils.uuid import get_thread_id
 from langchain_core.messages import AIMessage, BaseMessage, ToolMessage
 from langgraph.graph import StateGraph
 from langgraph.graph.state import CompiledStateGraph
@@ -83,10 +83,13 @@ class ReactAgent(BaseReactAgent):
 
     def stream(
         self, messages: list[BaseMessage], thread_id: str | None = None, llm_config: LLMConfig = LLMConfig()
-    ) -> Iterator[dict[str, list[BaseMessage]]]:
+    ) -> Iterator[tuple[BaseMessage, dict[str, str]]]:
         state = MessagesState(messages=messages, llm_config=llm_config)
         return self.workflow.stream(
             state,
             stream_mode="messages",
             config={"configurable": {"thread_id": thread_id or get_thread_id()}},
         )
+
+    def plot(self) -> str:
+        return self.workflow.get_graph().draw_mermaid()

@@ -21,12 +21,10 @@ class UsedTool(BaseModel):
     """
 
     name: str = Field(
-        ...,
         description="The identifier name of the external tool or API that was called during processing",
         examples=["get_temperature"],
     )
-    output: str | int = Field(
-        ...,
+    output: str | None = Field(
         description="The result or response returned by the external tool when it was called",
         examples=["The temperature in Tokyo is 20°C"],
     )

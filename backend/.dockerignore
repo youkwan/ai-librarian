@@ -1,0 +1,29 @@
+# IDE
+.vscode/
+
+# Git
+.git
+.gitignore
+.dockerignore
+
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Environments
+**/.env
+**/.venv
+**/*.egg-info
+**/__pycache__
+**/.vscode
+**/.ruff_cache
+
+# Logging
+logs
+
+# Documentation
+README.md

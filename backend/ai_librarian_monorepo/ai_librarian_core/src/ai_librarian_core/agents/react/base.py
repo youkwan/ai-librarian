@@ -39,7 +39,7 @@ class BaseReactAgent(ABC):
     @property
     @abstractmethod
     def workflow(self) -> CompiledStateGraph:
-        pass
+        raise NotImplementedError("Subclasses must implement this method.")
 
     def __post_init__(self):
         self._llm_cache: dict[LLMConfig, BaseChatModel] = {}
@@ -67,12 +67,16 @@ class BaseReactAgent(ABC):
 
     @abstractmethod
     def _init_workflow(self) -> CompiledStateGraph:
-        pass
+        raise NotImplementedError("Init workflow method is not implemented")
 
     @abstractmethod
     def run(self) -> tuple[AIMessage, list[UsedTool]]:
-        pass
+        raise NotImplementedError("Run method is not implemented")
 
     @abstractmethod
     def stream(self) -> Iterator[dict[str, list[BaseMessage]]] | AsyncIterator[dict[str, list[BaseMessage]]]:
-        pass
+        raise NotImplementedError("Stream method is not implemented")
+
+    @abstractmethod
+    def plot(self) -> str:
+        raise NotImplementedError("Plot method is not implemented")

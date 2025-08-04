@@ -16,7 +16,7 @@ class GoogleBooksQueryRun(BaseTool):
     based on keywords.
 
     Attributes:
-        name (str): Name of the tool, set to "GoogleBooks"
+        name (str): Name of the tool, set to "google_books"
         description (str): Description of the tool's functionality
         api_wrapper (GoogleBooksAPIWrapper): Wrapper instance for Google Books API
         args_schema (type[BaseModel]): Schema for input validation
@@ -30,7 +30,7 @@ class GoogleBooksQueryRun(BaseTool):
         ...
     """
 
-    name: str = "GoogleBooks"
+    name: str = "google_books"
     description: str = (
         "A tool that searches the Google Books API. "
         "Useful for when you need to answer general inquiries about "
