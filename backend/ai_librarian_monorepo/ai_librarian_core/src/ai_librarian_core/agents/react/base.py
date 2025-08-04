@@ -39,7 +39,7 @@ class BaseReactAgent(ABC):
     @property
     @abstractmethod
     def workflow(self) -> CompiledStateGraph:
-        pass
+        raise NotImplementedError("Subclasses must implement this method.")
 
     def __post_init__(self):
         self._llm_cache: dict[LLMConfig, BaseChatModel] = {}
