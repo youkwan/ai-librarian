@@ -37,7 +37,7 @@ class BaseDeepSearchAgent(ABC):
     @property
     @abstractmethod
     def workflow(self) -> CompiledStateGraph:
-        pass
+        raise NotImplementedError("Subclasses must implement this method.")
 
     def __post_init__(self):
         self._llm_cache: dict[LLMConfig, BaseChatModel] = {}
@@ -65,12 +65,12 @@ class BaseDeepSearchAgent(ABC):
 
     @abstractmethod
     def _init_workflow(self) -> CompiledStateGraph:
-        pass
+        raise NotImplementedError("Subclasses must implement this method.")
 
     @abstractmethod
     def run(self) -> Any:
-        pass
+        raise NotImplementedError("Subclasses must implement this method.")
 
     @abstractmethod
     def stream(self) -> Any:
-        pass
+        raise NotImplementedError("Subclasses must implement this method.")
