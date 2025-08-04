@@ -48,11 +48,3 @@ class NCLSearchRun(BaseTool):
         run_manager: AsyncCallbackManagerForToolRun | None = None,
     ) -> str:
         return await self.async_ncl_search.arun(query)
-
-
-if __name__ == "__main__":
-    import asyncio
-
-    ncl_search_tool = NCLSearchRun()
-    result = asyncio.run(ncl_search_tool.ainvoke({"query": "Artificial Intelligence"}))
-    print(result)
