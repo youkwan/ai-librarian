@@ -2,7 +2,7 @@ import json
 import re
 
 from ai_librarian_core.models.llm_config import LLMConfig
-from ai_librarian_core.utils.utils import get_thread_id
+from ai_librarian_core.utils.uuid import get_thread_id
 
 DEFAULT_MESSAGE_EXAMPLE = "The current temperature in Taipei is approximately 28.86°C."
 
@@ -79,7 +79,3 @@ def get_sse_response_example(
     example_result += "event: llm_end\n"
     example_result += f'data: {{"thread_id":{thread_id},"message_chunk":"","llm_config":{llm_config_str}}}\n\n'
     return example_result
-
-
-if __name__ == "__main__":
-    print(get_sse_response_example())
