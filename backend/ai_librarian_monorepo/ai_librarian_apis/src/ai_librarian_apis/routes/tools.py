@@ -1,7 +1,7 @@
 from ai_librarian_apis.core.logger import logger
-from ai_librarian_apis.deps import get_tools
 from ai_librarian_apis.schemas.error import ErrorResponse
 from ai_librarian_apis.schemas.tools import ToolArg, ToolInfo, ToolListResponse, ToolRunRequest, ToolRunResponse
+from ai_librarian_apis.utils.deps import get_tools
 from fastapi import APIRouter, Depends, HTTPException
 from langchain_core.tools import BaseTool
 

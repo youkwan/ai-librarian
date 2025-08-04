@@ -2,7 +2,7 @@ from ai_librarian_apis.core.global_vars import react_agent
 from ai_librarian_apis.core.logger import logger
 from ai_librarian_apis.schemas.react import AgentRequest, AgentResponse, FlowchartResponse, ModelResponse, OpenAIMessage
 from ai_librarian_apis.schemas.sse import EventPayload, LLMChunkPayload, SSEEvent, ToolPayload
-from ai_librarian_apis.schemas.sse_example import get_sse_response_example
+from ai_librarian_apis.utils.sse_example import get_sse_response_example
 from ai_librarian_core.models.llm_config import Model
 from ai_librarian_core.models.used_tool import UsedTool
 from fastapi import APIRouter, Request
