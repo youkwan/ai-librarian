@@ -1,0 +1,14 @@
+services:
+  backend:
+    image: ai-librarian-backend:latest
+    container_name: ai-librarian-backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - 8000:8000
+    env_file:
+      - ./backend/ai_librarian_monorepo/ai_librarian_apis/.env
+    volumes:
+      - ./backend/ai_librarian_monorepo/ai_librarian_apis/.env:/app/ai_librarian_monorepo/ai_librarian_apis/.env
+    restart: unless-stopped
