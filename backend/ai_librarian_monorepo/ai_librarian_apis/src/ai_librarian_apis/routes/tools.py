@@ -8,11 +8,16 @@ from langchain_core.tools import BaseTool
 tools_router = APIRouter(prefix="/tools", tags=["Tools"])
 
 
-@tools_router.get("", responses={500: {"model": ErrorResponse}})
+@tools_router.get(
+    "",
+    description=(
+        "Provides a list of tools that the agent can potentially use during "
+        "its execution to perform actions or retrieve information."
+    ),
+    summary="List Tools",
+    responses={500: {"model": ErrorResponse}},
+)
 def list_tools(tools: list[BaseTool] = Depends(get_tools)) -> ToolListResponse:
-    """Provides a list of tools that the agent can potentially use during its
-    execution to perform actions or retrieve information.
-    """
     try:
         tools_info = []
         for tool in tools:
@@ -47,13 +52,14 @@ def list_tools(tools: list[BaseTool] = Depends(get_tools)) -> ToolListResponse:
 
 @tools_router.post(
     "/run",
+    description="Runs a tool with the given name and input(s).",
+    summary="Run Tool",
     responses={
         404: {"model": ErrorResponse, "description": "Tool not found."},
         500: {"model": ErrorResponse},
     },
 )
-async def run_tool(request: ToolRunRequest, tools: list[BaseTool] = Depends(get_tools)):
-    """Runs a tool with the given name and input."""
+async def run_tool(request: ToolRunRequest, tools: list[BaseTool] = Depends(get_tools)) -> ToolRunResponse:
     try:
         selected_tool = next((tool for tool in tools if tool.name == request.tool_name), None)
         if not selected_tool:
