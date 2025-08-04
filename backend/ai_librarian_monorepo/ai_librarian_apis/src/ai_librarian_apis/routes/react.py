@@ -123,7 +123,8 @@ def _process_ai_message(
         "Streams the ReAct Agent's response. "
         "The request should be a list of OpenAI style messages between user, assistant and system. "
         "A thread id can be provided to continue a conversation on a specific thread. "
-        "If not provided, a new conversation thread will be created automatically."
+        "If not provided, a new conversation thread will be created automatically. "
+        "Note that Swagger UI does not support SSE demo, it is recommended to use Postman to test this endpoint."
     ),
     summary="Stream the ReAct Agent",
     responses={

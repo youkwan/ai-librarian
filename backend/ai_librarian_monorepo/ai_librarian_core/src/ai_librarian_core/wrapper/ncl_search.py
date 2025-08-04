@@ -60,6 +60,8 @@ class NCLSearch(BaseNCLSearch):
 
     def _process_workflow(self, query: str) -> list[dict[str, str]]:
         with sync_playwright() as p:
+            # TODO(youkwan): Find a better way to fetch cookies other than Playwright.
+            # Playwright relies on too many dependencies which is too heavy for this use case.
             browser = p.chromium.launch(headless=True)
             context = browser.new_context()
             page = context.new_page()
