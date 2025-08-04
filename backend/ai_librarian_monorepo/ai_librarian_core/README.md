@@ -1,12 +1,12 @@
 # ai-librarian-core
 
-`ai-librarian-core` is a Python package designed to streamline the development of AI agents. It provides a comprehensive wrapper around LangChain and LangGraph, offering seamless integration with essential functionalities such as tooling, memory management, and real-time streaming capabilities.
+`ai-librarian-core` is a Python package designed to streamline the development of AI agents. It provides a comprehensive wrapper around LangChain and LangGraph, offering seamless integration with essential functionalities such as multi-hop tool use, memory management, and real-time streaming capabilities.
 
 ## Key Features
 
-*   **Tooling Integration**: Easily integrate and manage a variety of pre-built and custom tools to extend agent capabilities.
-*   **Memory Management**: Efficiently handle conversational memory, enabling stateful and context-aware AI agents.
-*   **Streaming Support**: Facilitate interactive user experiences with real-time token streaming for agent responses.
+*   **Multi-hop Tool Use**: Enables agents to call multiple tools in sequence to generate comprehensive responses.
+*   **Streaming Support**: Delivers real-time token streaming for immediate agent responses.
+*   **Memory Management**: Implements conversational memory systems for stateful and context-aware AI interactions.
 
 ## Built-in Tools
 
@@ -257,7 +257,10 @@ asyncio.run(stream_async_agent())
 ```
 
 ## TODO
-1. Simplify the import paths of this package (write proper init file).
-2. Implement tool for searching resources on the National Library of Public Information (國立公共資訊圖書館).
-3. Implement Deep search agent.
-4. Implement MCP support.
+1. Extend `AsyncReactAgent` or create a new agent with additional Live2D control signals.
+2. Simplify the import paths of this package (write proper init file).
+3. Remove the `playwright` dependency.
+4. Implement database for storing conversation history.
+6. Implement tool for searching resources on the National Library of Public Information (國立公共資訊圖書館).
+7. Implement Deep search agent.
+8. Implement MCP support.
