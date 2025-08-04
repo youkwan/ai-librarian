@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     )
 
     # API settings
-    # debug: bool = False
+    # TODO(youkwan): Add a way to switch between development and production mode.
     host: str = "0.0.0.0"
     port: int = 8000
     allowed_origins: list[str] | None = Field(default_factory=list)
