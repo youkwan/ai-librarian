@@ -104,19 +104,18 @@ class AgentRequest(BaseModel):
     Contains all parameters needed to process a conversation with the Agent.
     """
 
-    thread_id: str = Field(
+    thread_id: str | None = Field(
         default_factory=get_thread_id,
         examples=["thread-ab586827-8c7c-4bf9-a6c9-fea58f43f5fc"],
         description=(
             "Unique identifier to track and maintain conversation state. "
-            "If provided, the existing conversation will be continued. "
+            "If provided, subsequent requests will continue on this specified thread (with memory). "
             "If not provided, a new conversation thread will be created automatically."
         ),
     )
     messages: list[OpenAIMessage] = Field(
-        default_factory=list,
         description=(
-            "Array of conversation messages between user, assistant and system used to generate a contextual response. "
+            "Array of OpenAI style messages between user, assistant and system used to generate a contextual response. "
             "Can include multiple sequential messages to maintain conversation history."
         ),
         examples=[
@@ -126,10 +125,10 @@ class AgentRequest(BaseModel):
             ]
         ],
     )
-    llm_config: LLMConfig = Field(
+    llm_config: LLMConfig | None = Field(
         default_factory=LLMConfig,
         description=(
-            "Configuration settings for the Large Language Model processing the request. "
+            "Configuration settings for the LLM processing the request. "
             "Controls model selection and generation parameters."
         ),
     )
