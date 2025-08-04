@@ -1,7 +1,7 @@
 from ai_librarian_core.tools.date_time import DateTimeTool
 from ai_librarian_core.tools.google_books import GoogleBooksQueryRun
 from ai_librarian_core.tools.google_search import SchemaedGoogleSearchRun
-from ai_librarian_core.tools.ncl_crawler import NCLCrawlerToolRun
+from ai_librarian_core.tools.ncl_search import NCLSearchRun
 from ai_librarian_core.tools.open_weather_map import SchemaedOpenWeatherMapQueryRun
 from ai_librarian_core.tools.youtube import SchemaedYouTubeSearchTool
 from langchain_community.tools import (
@@ -21,7 +21,7 @@ def get_built_in_tools() -> list[BaseTool]:
         ArxivQueryRun(),
         DuckDuckGoSearchResults(),
         SchemaedYouTubeSearchTool(),
-        NCLCrawlerToolRun(),
+        NCLSearchRun(),
         WikipediaQueryRun(api_wrapper=WikipediaAPIWrapper()),
     ]
 
